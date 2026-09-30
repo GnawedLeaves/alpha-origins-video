@@ -51,6 +51,11 @@ export function PromptComposer({
   const [albumOpen, setAlbumOpen] = useState(false);
   const [refining, setRefining] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Synchronous locks. `submitting`/`refining` state only changes on the next render, so two
+  // Enter keydowns in the same moment (key auto-repeat, or keyboards/IMEs that fire Enter twice)
+  // would both see "not busy" and start two videos. A ref flips immediately.
+  const generateInFlight = useRef(false);
+  const refineInFlight = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   // The textarea is disabled while refining, which drops keyboard focus. Put the cursor back at the
@@ -94,7 +99,8 @@ export function PromptComposer({
   }
 
   async function handleRefine() {
-    if (!hasPrompt || busy) return;
+    if (!hasPrompt || busy || refineInFlight.current || generateInFlight.current) return;
+    refineInFlight.current = true;
     setError(null);
     setRefining(true);
     try {
@@ -116,6 +122,7 @@ export function PromptComposer({
       setError((err as Error).message);
     } finally {
       refocusAfterRefine.current = true;
+      refineInFlight.current = false;
       setRefining(false);
     }
   }
@@ -127,7 +134,8 @@ export function PromptComposer({
   }
 
   async function handleGenerate() {
-    if (!canGenerate) return;
+    if (!canGenerate || generateInFlight.current || refineInFlight.current) return;
+    generateInFlight.current = true;
     setError(null);
     setSubmitting(true);
 
@@ -178,16 +186,20 @@ export function PromptComposer({
     } catch (err) {
       setError((err as Error).message);
     } finally {
+      generateInFlight.current = false;
       setSubmitting(false);
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     // Enter makes the video; Shift+Enter adds a new line.
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      handleGenerate();
-    }
+    if (e.key !== "Enter" || e.shiftKey) return;
+    // Enter that confirms an IME composition (e.g. Chinese input) isn't a submit.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    // Holding Enter auto-repeats keydown; only the first press counts.
+    if (e.repeat) return;
+    handleGenerate();
   }
 
   return (
