@@ -5,9 +5,20 @@ import { Download, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ClipTrimmer, type EditorClip } from "./ClipTrimmer";
 import { VideoPreviewPlayer } from "./VideoPreviewPlayer";
-import { useFfmpeg } from "./useFfmpeg";
-import type { ExportRecord } from "@/lib/types/domain";
+import { useFfmpeg, type FitMode } from "./useFfmpeg";
+import { ASPECT_RATIO_LABELS, type AspectRatio, type ExportRecord } from "@/lib/types/domain";
+import { orientationOf } from "@/lib/utils/video";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const ASPECT_RATIOS = Object.keys(ASPECT_RATIO_LABELS) as AspectRatio[];
 
 export function Timeline({
   projectId,
@@ -25,6 +36,13 @@ export function Timeline({
   const [rendering, setRendering] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Vertical by default: Reels, TikTok and Shorts are all 9:16.
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
+  const [fit, setFit] = useState<FitMode>("fill");
+
+  const mismatchedClips = clips.filter(
+    (c) => c.width && c.height && orientationOf(c.width, c.height) !== aspectRatio
+  ).length;
 
   function updateTrim(id: string, trimStart: number, trimEnd: number) {
     setClips((prev) => prev.map((c) => (c.id === id ? { ...c, trimStart, trimEnd } : c)));
@@ -63,7 +81,8 @@ export function Timeline({
     setRendering(true);
     try {
       const blob = await renderTimeline(
-        clips.map((c) => ({ id: c.id, sourceUrl: c.sourceUrl, trimStart: c.trimStart, trimEnd: c.trimEnd }))
+        clips.map((c) => ({ id: c.id, sourceUrl: c.sourceUrl, trimStart: c.trimStart, trimEnd: c.trimEnd })),
+        { aspectRatio, fit }
       );
       const localUrl = URL.createObjectURL(blob);
       setPreviewUrl(localUrl);
@@ -136,8 +155,63 @@ export function Timeline({
       <div>
         <h3 className="text-sm font-medium text-foreground">Preview / Export</h3>
         <div className="mt-3">
-          <VideoPreviewPlayer src={previewUrl} label={previewUrl ? "Rendered export" : undefined} />
+          <VideoPreviewPlayer
+            src={previewUrl}
+            aspectRatio={aspectRatio}
+            label={previewUrl ? "Rendered export" : undefined}
+          />
         </div>
+
+        <div className="mt-4 flex flex-wrap items-end gap-4">
+          <div className="space-y-1.5">
+            <Label>Format</Label>
+            <Select
+              value={aspectRatio}
+              onValueChange={(v) => v && setAspectRatio(v as AspectRatio)}
+              items={ASPECT_RATIO_LABELS}
+            >
+              <SelectTrigger size="sm" aria-label="Export format">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASPECT_RATIOS.map((ratio) => (
+                  <SelectItem key={ratio} value={ratio}>
+                    {ASPECT_RATIO_LABELS[ratio]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Framing</Label>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={fit === "fill" ? "secondary" : "ghost"}
+                onClick={() => setFit("fill")}
+                aria-pressed={fit === "fill"}
+              >
+                Crop to fill
+              </Button>
+              <Button
+                size="sm"
+                variant={fit === "fit" ? "secondary" : "ghost"}
+                onClick={() => setFit("fit")}
+                aria-pressed={fit === "fit"}
+              >
+                Fit with bars
+              </Button>
+            </div>
+          </div>
+        </div>
+        {mismatchedClips > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {mismatchedClips} {mismatchedClips === 1 ? "clip doesn't" : "clips don't"} match{" "}
+            {aspectRatio} and will be{" "}
+            {fit === "fill" ? "cropped at the edges" : "shown with black bars"}.
+          </p>
+        )}
 
         <Button
           onClick={handleExport}

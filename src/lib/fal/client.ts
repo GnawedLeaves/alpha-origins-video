@@ -1,6 +1,7 @@
 import "server-only";
 import { fal } from "@fal-ai/client";
 import { requireEnv } from "@/lib/env";
+import type { AspectRatio } from "@/lib/types/domain";
 import { getFalModel, resolveFalEndpoint } from "./models";
 
 let configured = false;
@@ -15,6 +16,7 @@ export interface SubmitJobArgs {
   prompt: string;
   durationSeconds: number;
   referenceImageUrl?: string;
+  aspectRatio?: AspectRatio;
   webhookUrl?: string;
 }
 
@@ -26,6 +28,7 @@ export async function submitGenerationJob({
   prompt,
   durationSeconds,
   referenceImageUrl,
+  aspectRatio,
   webhookUrl,
 }: SubmitJobArgs) {
   ensureConfigured();
@@ -42,6 +45,9 @@ export async function submitGenerationJob({
   };
   if (useImage) {
     input.image_url = referenceImageUrl;
+  }
+  if (aspectRatio && model.aspectRatios?.includes(aspectRatio)) {
+    input.aspect_ratio = aspectRatio;
   }
 
   const { request_id } = await fal.queue.submit(resolveFalEndpoint(model, useImage), {

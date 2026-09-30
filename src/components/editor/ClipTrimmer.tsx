@@ -11,6 +11,9 @@ export interface EditorClip {
   sourceUrl: string;
   thumbnailUrl?: string | null;
   duration: number;
+  // Source frame size, when the browser could read it (used to warn about crop/letterboxing).
+  width?: number;
+  height?: number;
   trimStart: number;
   trimEnd: number;
 }

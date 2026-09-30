@@ -1,3 +1,5 @@
+import type { AspectRatio } from "@/lib/types/domain";
+
 export interface FalModel {
   id: string;
   falEndpoint: string;
@@ -9,6 +11,9 @@ export interface FalModel {
   // Some models expose image-to-video as a separate endpoint; used when a reference image is sent.
   imageToVideoEndpoint?: string;
   durations: number[];
+  // Aspect ratios the endpoint accepts via `aspect_ratio`. Omitted = no aspect control: image-to-
+  // video output follows the reference image's shape, text-to-video output is fixed landscape.
+  aspectRatios?: AspectRatio[];
 }
 
 // Small, easy-to-extend registry. Add a new model by adding an entry here — no other code
@@ -23,6 +28,7 @@ export const FAL_MODELS: FalModel[] = [
     description: "High fidelity, best for polished hero shots from a text prompt.",
     supportsImageToVideo: false,
     durations: [5, 10],
+    aspectRatios: ["9:16", "16:9", "1:1"],
   },
   {
     id: "kling-2.0-image",

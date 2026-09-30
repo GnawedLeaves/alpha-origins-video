@@ -11,6 +11,7 @@ const bodySchema = z.object({
   modelId: z.string(),
   durationSeconds: z.number().int().positive(),
   referenceImageUrl: z.string().url().optional(),
+  aspectRatio: z.enum(["16:9", "9:16", "1:1"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,7 +27,8 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { projectId, prompt, modelId, durationSeconds, referenceImageUrl } = parsed.data;
+  const { projectId, prompt, modelId, durationSeconds, referenceImageUrl, aspectRatio } =
+    parsed.data;
 
   let model;
   try {
@@ -36,6 +38,12 @@ export async function POST(request: NextRequest) {
   }
   if (!model.durations.includes(durationSeconds)) {
     return NextResponse.json({ error: "Unsupported duration for this model" }, { status: 400 });
+  }
+  if (aspectRatio && !model.aspectRatios?.includes(aspectRatio)) {
+    return NextResponse.json(
+      { error: `${model.label} doesn't support ${aspectRatio}` },
+      { status: 400 }
+    );
   }
   if (model.requiresImage && !referenceImageUrl) {
     return NextResponse.json({ error: `${model.label} needs a reference image` }, { status: 400 });
@@ -71,6 +79,7 @@ export async function POST(request: NextRequest) {
       prompt,
       durationSeconds,
       referenceImageUrl,
+      aspectRatio,
       webhookUrl,
     });
 

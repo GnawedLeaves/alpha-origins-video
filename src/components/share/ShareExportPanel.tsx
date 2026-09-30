@@ -60,7 +60,11 @@ export function ShareExportPanel({
     <div className="space-y-4">
       <Card>
         <CardContent>
-          <video src={activeExport.video_url} controls className="aspect-video w-full rounded-lg bg-black" />
+          <video
+            src={activeExport.video_url}
+            controls
+            className="max-h-[70vh] w-full rounded-lg bg-black object-contain"
+          />
 
           <div className="mt-3 flex flex-wrap gap-2">
             <Button render={<a href={activeExport.video_url} download="alpha-origins-ad.mp4" />}>

@@ -11,7 +11,7 @@ import { CaptionResults } from "@/components/captions/CaptionResults";
 import { BrandVoiceConfig } from "@/components/captions/BrandVoiceConfig";
 import { ShareExportPanel } from "@/components/share/ShareExportPanel";
 import { useGenerations } from "@/hooks/useGenerations";
-import { getVideoDuration } from "@/lib/utils/video";
+import { getVideoMetadata, type VideoMetadata } from "@/lib/utils/video";
 import type { BrandVoice, CaptionRecord, ExportRecord, Generation, Project } from "@/lib/types/domain";
 
 const TABS = ["Generate", "Editor", "Captions", "Share"] as const;
@@ -40,12 +40,13 @@ export function ProjectWorkspace({
 
   async function handleAddToTimeline(generation: Generation) {
     if (!generation.video_url) return;
-    let duration = generation.duration_seconds;
+    let meta: Partial<VideoMetadata> = {};
     try {
-      duration = await getVideoDuration(generation.video_url);
+      meta = await getVideoMetadata(generation.video_url);
     } catch {
       // fall back to the requested duration if metadata probing fails (e.g. CORS)
     }
+    const duration = meta.duration ?? generation.duration_seconds;
     setClips((prev) => [
       ...prev,
       {
@@ -54,6 +55,8 @@ export function ProjectWorkspace({
         sourceUrl: generation.video_url!,
         thumbnailUrl: generation.thumbnail_url,
         duration,
+        width: meta.width,
+        height: meta.height,
         trimStart: 0,
         trimEnd: duration,
       },

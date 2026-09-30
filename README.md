@@ -9,7 +9,7 @@ in-browser, generate platform-tailored captions, and export/share the result.
 - **Video editing**: `@ffmpeg/ffmpeg` (WASM) running entirely in the browser
 - **Backend/DB**: Supabase (Auth, Postgres, Storage)
 - **AI video**: `@fal-ai/client` (Kling, LTX Video, MiniMax — see `src/lib/fal/models.ts`)
-- **AI captions**: `@anthropic-ai/sdk` (Claude), brand-voice aware, per-platform
+- **AI captions**: `@google/genai` (Gemini, free tier), brand-voice aware, per-platform
 
 ## 1. Supabase setup
 
@@ -36,8 +36,10 @@ app throws an error naming it):
 - `FAL_KEY` — from [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys).
 - `FAL_WEBHOOK_SECRET` — any long random string (`openssl rand -hex 32`). The webhook callback URL
   is HMAC-signed with it so nobody else can post fake results. Only used when webhooks are on.
-- `ANTHROPIC_API_KEY` — from [console.anthropic.com](https://console.anthropic.com).
-  `ANTHROPIC_MODEL` optionally overrides the caption model (default `claude-opus-5-5`).
+- `GEMINI_API_KEY` — free from [Google AI Studio](https://aistudio.google.com/apikey).
+  `GEMINI_MODEL` optionally overrides the caption model (default `gemini-flash-latest`, which is on
+  the free tier; free-tier keys are rate-limited, so rapid repeated caption requests may get a
+  "rate limit reached" error).
 - `NEXT_PUBLIC_SITE_URL` — `http://localhost:3000` for local dev. **fal.ai webhooks need a public
   URL**, so in local dev the app automatically falls back to polling (`/api/fal/status/...`)
   instead of registering a webhook whenever `NEXT_PUBLIC_SITE_URL` contains `localhost`. If you
@@ -63,7 +65,7 @@ in.
   reorder clips, then "Trim, merge & export" runs `@ffmpeg/ffmpeg` in the browser to produce a
   single MP4, uploads it to the `exports` bucket, and saves the metadata via `/api/exports`.
 - **Captions tab**: generates platform-specific captions (Instagram Reels, Facebook Ads, TikTok,
-  YouTube Shorts) via `/api/captions/generate`, which calls Claude with your brand voice
+  YouTube Shorts) via `/api/captions/generate`, which calls Gemini with your brand voice
   (editable in the same tab, persisted to `profiles.brand_voice`).
 - **Share tab**: download the MP4, copy a caption to the clipboard, or use the native
   `navigator.share()` sheet on supported devices (mobile Safari/Chrome). There's no direct
@@ -71,10 +73,19 @@ in.
   and App Review for content-publishing permissions, which takes external approval you'd need to
   obtain separately. `ShareExportPanel` is where a `MetaPublisher` integration would plug in later.
 
+## Aspect ratios (vertical video)
+
+- **Generate:** only models with `aspectRatios` in `src/lib/fal/models.ts` take an aspect ratio
+  (currently Kling 2.0 text-to-video: 9:16, 16:9, 1:1). Image-to-video models follow the uploaded
+  image's shape, so upload a vertical photo for vertical output.
+- **Export:** the Editor tab renders to 9:16 (720×1280, default), 16:9 (1280×720) or 1:1
+  (720×720). "Crop to fill" crops clips that don't match; "Fit with bars" letterboxes them.
+
 ## Adding a Fal.ai model
 
 Add an entry to `FAL_MODELS` in `src/lib/fal/models.ts` — no other code changes needed as long as
-the endpoint accepts `{ prompt, image_url?, duration }`-shaped input and returns
+the endpoint accepts `{ prompt, image_url?, duration, aspect_ratio? }`-shaped input (list the
+ratios it accepts in `aspectRatios`; leave it out if the endpoint has no `aspect_ratio` input) and returns
 `{ video: { url } }`. If a model's schema differs, adjust `buildFalInput`/`parseFalOutput` logic in
 `src/lib/fal/client.ts`.
 

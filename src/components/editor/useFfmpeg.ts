@@ -3,19 +3,38 @@
 import { useCallback, useRef, useState } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import type { AspectRatio } from "@/lib/types/domain";
 
 const CORE_BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
 
-// Every clip is scaled/padded to one resolution and frame rate so the concat step can stream-copy.
+// Every clip is scaled to one frame size and frame rate so the concat step can stream-copy.
 // Different fal.ai models output different sizes, and concat with `-c copy` breaks on mismatches.
 // Audio is dropped: the text/image-to-video models in src/lib/fal/models.ts produce silent video,
 // and mixing clips with and without an audio track would also break concat.
-const OUTPUT_WIDTH = 1280;
-const OUTPUT_HEIGHT = 720;
 const OUTPUT_FPS = 30;
-const NORMALIZE_FILTER =
-  `scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=decrease,` +
-  `pad=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=${OUTPUT_FPS}`;
+
+export const EXPORT_SIZES: Record<AspectRatio, { width: number; height: number }> = {
+  "9:16": { width: 720, height: 1280 },
+  "16:9": { width: 1280, height: 720 },
+  "1:1": { width: 720, height: 720 },
+};
+
+// "fill" crops clips to cover the whole frame (no bars); "fit" letterboxes them with black bars.
+export type FitMode = "fill" | "fit";
+
+export interface ExportFormat {
+  aspectRatio: AspectRatio;
+  fit: FitMode;
+}
+
+function normalizeFilter({ aspectRatio, fit }: ExportFormat) {
+  const { width: w, height: h } = EXPORT_SIZES[aspectRatio];
+  const resize =
+    fit === "fill"
+      ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`
+      : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`;
+  return `${resize},setsar=1,fps=${OUTPUT_FPS}`;
+}
 
 export interface TimelineClip {
   id: string;
@@ -50,9 +69,9 @@ export function useFfmpeg() {
   }, [loaded]);
 
   // Trims each clip to [trimStart, trimEnd] (re-encoding for frame-accurate cuts and a uniform
-  // format), then concats them in order into a single MP4. Returns the rendered Blob.
+  // frame size for the chosen export format), then concats them in order into a single MP4.
   const renderTimeline = useCallback(
-    async (clips: TimelineClip[]): Promise<Blob> => {
+    async (clips: TimelineClip[], format: ExportFormat): Promise<Blob> => {
       const ffmpeg = await ensureLoaded();
       const outputs: string[] = [];
 
@@ -71,7 +90,7 @@ export function useFfmpeg() {
           "-i",
           inputName,
           "-vf",
-          NORMALIZE_FILTER,
+          normalizeFilter(format),
           "-c:v",
           "libx264",
           "-preset",

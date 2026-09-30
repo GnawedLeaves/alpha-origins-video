@@ -1,17 +1,17 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { ApiError, GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { requireEnv } from "@/lib/env";
 import type { BrandVoice, Platform } from "@/lib/types/domain";
 
-// Override with ANTHROPIC_MODEL in .env.local if you want a different model.
-const DEFAULT_MODEL = "claude-opus-5-5";
+// "gemini-flash-latest" always points at Google's current Flash model, which is on the Gemini API
+// free tier. Override with GEMINI_MODEL in .env.local to pin a specific model.
+const DEFAULT_MODEL = "gemini-flash-latest";
 
-let client: Anthropic | null = null;
-function anthropic() {
-  client ??= new Anthropic({
-    apiKey: requireEnv("ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY),
+let client: GoogleGenAI | null = null;
+function gemini() {
+  client ??= new GoogleGenAI({
+    apiKey: requireEnv("GEMINI_API_KEY", process.env.GEMINI_API_KEY),
   });
   return client;
 }
@@ -27,6 +27,13 @@ const CaptionsSchema = z.object({
     })
   ),
 });
+
+// Gemini accepts a subset of JSON Schema; drop the `$schema` meta key zod adds.
+const CAPTIONS_JSON_SCHEMA = (() => {
+  const schema: Record<string, unknown> = z.toJSONSchema(CaptionsSchema);
+  delete schema.$schema;
+  return schema;
+})();
 
 const PLATFORM_SPEC: Record<Platform, string> = {
   instagram_reels:
@@ -74,21 +81,40 @@ Return one entry in "captions" per requested platform. "content" must NOT includ
 Generate one caption per platform below, following each platform's format exactly:
 ${platformInstructions}`;
 
-  const message = await anthropic().messages.parse({
-    model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
-    max_tokens: 16000,
-    output_config: { effort: "low", format: zodOutputFormat(CaptionsSchema) },
-    system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
-  });
-
-  if (message.stop_reason === "refusal") {
-    throw new Error("The caption generator declined this request — try rewording the video context");
+  let text: string | undefined;
+  try {
+    const response = await gemini().models.generateContent({
+      model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+      contents: userPrompt,
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+        responseJsonSchema: CAPTIONS_JSON_SCHEMA,
+      },
+    });
+    text = response.text;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 429) {
+      throw new Error("Gemini free-tier rate limit reached — wait a minute and try again");
+    }
+    throw err;
   }
-  if (!message.parsed_output) {
+
+  if (!text) {
+    throw new Error("No response from caption generator");
+  }
+
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
     throw new Error("Could not parse caption generator response");
+  }
+  const parsed = CaptionsSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new Error("Caption generator returned an unexpected format");
   }
 
   const requested = new Set(platforms);
-  return message.parsed_output.captions.filter((c) => requested.has(c.platform));
+  return parsed.data.captions.filter((c) => requested.has(c.platform));
 }

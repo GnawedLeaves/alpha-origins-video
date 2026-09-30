@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Image as ImageIcon, Loader2, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { FAL_MODELS, getFalModel } from "@/lib/fal/models";
-import type { Generation } from "@/lib/types/domain";
+import { ASPECT_RATIO_LABELS, type AspectRatio, type Generation } from "@/lib/types/domain";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -29,6 +29,8 @@ export function PromptComposer({
   const [prompt, setPrompt] = useState("");
   const [modelId, setModelId] = useState(FAL_MODELS[0].id);
   const [duration, setDuration] = useState(FAL_MODELS[0].durations[0]);
+  // Vertical by default: Reels, TikTok and Shorts are all 9:16.
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
   const [referenceImage, setReferenceImage] = useState<{ file: File; previewUrl: string } | null>(
     null
   );
@@ -42,6 +44,9 @@ export function PromptComposer({
     setModelId(id);
     const next = getFalModel(id);
     setDuration(next.durations[0]);
+    if (next.aspectRatios && !next.aspectRatios.includes(aspectRatio)) {
+      setAspectRatio(next.aspectRatios[0]);
+    }
     if (!next.supportsImageToVideo) {
       setReferenceImage(null);
     }
@@ -94,6 +99,7 @@ export function PromptComposer({
           modelId,
           durationSeconds: duration,
           referenceImageUrl,
+          aspectRatio: model.aspectRatios ? aspectRatio : undefined,
         }),
       });
 
@@ -127,6 +133,11 @@ export function PromptComposer({
   }
 
   const busy = submitting || uploading;
+  const aspectHint = model.aspectRatios
+    ? null
+    : model.supportsImageToVideo
+      ? "Output matches your image's shape — upload a vertical photo for 9:16 video."
+      : "This model only outputs landscape video.";
   const missingImage = !!model.requiresImage && !referenceImage;
 
   return (
@@ -181,7 +192,11 @@ export function PromptComposer({
             <ImageIcon size={14} /> Attach image
           </Button>
 
-          <Select value={modelId} onValueChange={(id) => id && handleModelChange(id)}>
+          <Select
+            value={modelId}
+            onValueChange={(id) => id && handleModelChange(id)}
+            items={FAL_MODELS.map((m) => ({ value: m.id, label: m.label }))}
+          >
             <SelectTrigger size="sm">
               <SelectValue />
             </SelectTrigger>
@@ -197,6 +212,7 @@ export function PromptComposer({
           <Select
             value={String(duration)}
             onValueChange={(v) => v && setDuration(Number(v))}
+            items={model.durations.map((d) => ({ value: String(d), label: `${d}s` }))}
           >
             <SelectTrigger size="sm">
               <SelectValue />
@@ -210,6 +226,25 @@ export function PromptComposer({
             </SelectContent>
           </Select>
 
+          {model.aspectRatios && (
+            <Select
+              value={aspectRatio}
+              onValueChange={(v) => v && setAspectRatio(v as AspectRatio)}
+              items={ASPECT_RATIO_LABELS}
+            >
+              <SelectTrigger size="sm" aria-label="Aspect ratio">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {model.aspectRatios.map((ratio) => (
+                  <SelectItem key={ratio} value={ratio}>
+                    {ASPECT_RATIO_LABELS[ratio]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <Button
             onClick={handleGenerate}
             disabled={busy || !prompt.trim() || missingImage}
@@ -221,6 +256,7 @@ export function PromptComposer({
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">{model.description}</p>
+        {aspectHint && <p className="mt-1 text-xs text-muted-foreground">{aspectHint}</p>}
         {missingImage && (
           <p className="mt-1 text-xs text-muted-foreground">Attach an image to use this model.</p>
         )}
