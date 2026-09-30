@@ -11,6 +11,9 @@ export interface FalModel {
   // Some models expose image-to-video as a separate endpoint; used when a reference image is sent.
   imageToVideoEndpoint?: string;
   durations: number[];
+  // How many reference photos the model takes (default 1 for image-to-video models). Models with
+  // more than one receive them as `image_urls` and refer to them in the prompt as @Image1, @Image2…
+  maxImages?: number;
   // Aspect ratios the endpoint accepts via `aspect_ratio`. Omitted = no aspect control: image-to-
   // video output follows the reference image's shape, text-to-video output is fixed landscape.
   aspectRatios?: AspectRatio[];
@@ -57,7 +60,33 @@ export const FAL_MODELS: FalModel[] = [
     requiresImage: true,
     durations: [6],
   },
+  {
+    id: "kling-o1-reference",
+    falEndpoint: "fal-ai/kling-video/o1/standard/reference-to-video",
+    label: "Kling O1 (several photos)",
+    description: "Combines up to 7 photos (e.g. your dog and the food bag) into one video.",
+    supportsImageToVideo: true,
+    requiresImage: true,
+    maxImages: 7,
+    durations: [5, 10],
+    aspectRatios: ["9:16", "16:9", "1:1"],
+  },
+  {
+    id: "kling-o1-reference-pro",
+    falEndpoint: "fal-ai/kling-video/o1/reference-to-video",
+    label: "Kling O1 Pro (several photos)",
+    description: "Like Kling O1, with higher quality. Costs more per video.",
+    supportsImageToVideo: true,
+    requiresImage: true,
+    maxImages: 7,
+    durations: [5, 10],
+    aspectRatios: ["9:16", "16:9", "1:1"],
+  },
 ];
+
+export function maxImagesFor(model: FalModel) {
+  return model.supportsImageToVideo ? (model.maxImages ?? 1) : 0;
+}
 
 // The endpoint a job was actually submitted to. Status/result lookups must hit the same endpoint,
 // so this is derived the same way at submit time and at poll time.

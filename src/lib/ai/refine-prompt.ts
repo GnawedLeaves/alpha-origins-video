@@ -18,14 +18,20 @@ export async function refineVideoPrompt({
   businessName,
   durationSeconds,
   aspectRatio,
-  hasReferenceImage,
+  referenceImageCount,
 }: {
   idea: string;
   businessName: string;
   durationSeconds: number;
   aspectRatio?: AspectRatio;
-  hasReferenceImage: boolean;
+  referenceImageCount: number;
 }): Promise<string> {
+  const photoRule =
+    referenceImageCount > 1
+      ? `The video will be built from ${referenceImageCount} photos the person uploaded (for example their dog, the food bag, a place). You can't see them. Mention every photo once by its tag — ${Array.from({ length: referenceImageCount }, (_, i) => `@Image${i + 1}`).join(", ")} — in natural sentences, e.g. "the dog from @Image1 eats from the bowl while the food bag from @Image2 stands beside it". Don't invent details about what the photos show beyond what the person said.`
+      : referenceImageCount === 1
+        ? "The video will animate a photo the person uploaded. You can't see it. Describe only the motion, camera movement and mood — do not describe or change what the photo shows (breeds, colors, background, objects)."
+        : "Describe the full scene, since there is no photo.";
   const system = `You write prompts for an AI video generator. The videos are short social media ads for ${businessName}, a dog food brand. The person describing the idea is not technical, so their description may be short, vague, or in another language.
 
 Rewrite their idea into ONE prompt that will produce the best possible video. Rules:
@@ -35,11 +41,7 @@ Rewrite their idea into ONE prompt that will produce the best possible video. Ru
 - Make it look like a warm, bright, high-quality commercial: natural light, realistic, shallow depth of field, happy healthy dogs.
 - Never ask for on-screen text, captions, words, logos or labels — AI video can't render text. If a food bag or packaging appears, describe it simply without any readable text.
 - No medical or health claims, nothing unsafe for dogs, no distressed animals.
-- ${
-    hasReferenceImage
-      ? "The video will animate a photo the person uploaded. You can't see it. Describe only the motion, camera movement and mood — do not describe or change what the photo shows (breeds, colors, background, objects)."
-      : "Describe the full scene, since there is no photo."
-  }
+- ${photoRule}
 ${aspectRatio ? `- Framing: ${FRAMING[aspectRatio]}.\n` : ""}- Write in English, whatever language the idea was written in.
 - 40 to 90 words, one paragraph, plain sentences. No quotes, lists, headings or markdown.
 

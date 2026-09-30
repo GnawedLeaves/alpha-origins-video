@@ -7,7 +7,9 @@ const bodySchema = z.object({
   prompt: z.string().trim().min(2).max(2000),
   durationSeconds: z.number().int().positive(),
   aspectRatio: z.enum(["16:9", "9:16", "1:1"]).optional(),
-  hasReferenceImage: z.boolean(),
+  referenceImageCount: z.number().int().min(0).max(7).optional(),
+  // Older clients sent a boolean.
+  hasReferenceImage: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -36,7 +38,8 @@ export async function POST(request: NextRequest) {
       businessName: profile?.business_name || "Alpha Origins",
       durationSeconds: parsed.data.durationSeconds,
       aspectRatio: parsed.data.aspectRatio,
-      hasReferenceImage: parsed.data.hasReferenceImage,
+      referenceImageCount:
+        parsed.data.referenceImageCount ?? (parsed.data.hasReferenceImage ? 1 : 0),
     });
     return NextResponse.json({ prompt });
   } catch (err) {

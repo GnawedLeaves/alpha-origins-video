@@ -110,15 +110,19 @@ npm run check-setup
   Status updates arrive via Supabase Realtime (webhook path) or a 4s poll fallback
   (`useGenerations`).
 - **Watching clips**: tapping a finished clip's thumbnail opens `ClipViewer` (full-size player,
-  "Use this clip", "Download clip"). In step 2 each clip has its own player (`ClipTrimmer`) that
-  plays only the kept part, a trim slider that shows the frame at the cut point, and "Cut here"
-  (splits at the paused spot). `TimelinePreview` plays the whole timeline in order, framed like
-  the export, before anything is rendered.
+  "Use this clip", "Download clip").
+- **2. Put together** is a timeline editor (`Timeline`, `TimelineTracks`, `useTimelinePlayback`):
+  a preview player and a ruler/playhead over a video track and a music track. Drag clip blocks to
+  reorder; tap one to trim it, "Cut here" at the paused spot, duplicate or delete it (`ClipTrimmer`).
+  "Add music" puts a song on the music track: drag it to set where it starts, and set the start
+  point in the song, volume and fade-out in `MusicPanel`. Preview plays video and music in sync;
+  `useFfmpeg` mixes the music into the export (same fades as the preview, `timeline-model.ts`).
+  Music stays in the browser (it isn't uploaded) and, like the timeline, is lost on reload.
 - **Downloads / ffmpeg input** go through `/api/media` (`src/app/api/media/route.ts`), a signed-in,
   same-origin pass-through limited to fal.ai media and this project's Supabase storage. Browsers
   ignore `<a download>` on cross-origin URLs, and ffmpeg-wasm needs CORS to read clip bytes.
-- **2. Put together** (`Timeline`): add completed generations to an in-memory timeline, trim/split/
-  reorder clips, then "Trim, merge & export" runs `@ffmpeg/ffmpeg` in the browser to produce a
+- **2. Put together** (`Timeline`): add completed generations to an in-memory timeline, arrange
+  them and add music, then "Make final video" runs `@ffmpeg/ffmpeg` in the browser to produce a
   single MP4, uploads it to the `exports` bucket, and saves the metadata via `/api/exports`.
 - **3. Captions**: generates platform-specific captions (Instagram Reels, Facebook Ads, TikTok,
   YouTube Shorts) via `/api/captions/generate`, which calls Gemini with your brand voice
@@ -128,6 +132,15 @@ npm run check-setup
   Instagram/Facebook posting in v1 — that requires a Meta Developer App, Business verification,
   and App Review for content-publishing permissions, which takes external approval you'd need to
   obtain separately. `ShareExportPanel` is where a `MetaPublisher` integration would plug in later.
+
+## Several photos in one video
+
+Picking 2 or more photos in "My photos" switches to **Kling O1 reference-to-video**
+(`kling-o1-reference`, standard; the Pro version is under "More settings"). It takes up to 7
+photos (e.g. the dog, the food bag, a place) and refers to them in the prompt as `@Image1`,
+`@Image2`… in pick order. "Improve my description" writes those tags in; if a prompt has none,
+the server appends a line referencing every photo. It supports Tall/Square/Wide. Only the first
+photo's URL is stored on the `generations` row.
 
 ## Aspect ratios (vertical video)
 

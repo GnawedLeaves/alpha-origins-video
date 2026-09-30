@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { describeFalError, submitGenerationJob } from "@/lib/fal/client";
-import { getFalModel } from "@/lib/fal/models";
+import { getFalModel, maxImagesFor } from "@/lib/fal/models";
 import { signGenerationId } from "@/lib/fal/webhook-token";
 
 const bodySchema = z.object({
@@ -10,6 +10,8 @@ const bodySchema = z.object({
   prompt: z.string().min(3).max(2000),
   modelId: z.string(),
   durationSeconds: z.number().int().positive(),
+  referenceImageUrls: z.array(z.string().url()).max(7).optional(),
+  // Older clients sent a single photo.
   referenceImageUrl: z.string().url().optional(),
   aspectRatio: z.enum(["16:9", "9:16", "1:1"]).optional(),
 });
@@ -27,8 +29,10 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { projectId, prompt, modelId, durationSeconds, referenceImageUrl, aspectRatio } =
-    parsed.data;
+  const { projectId, prompt, modelId, durationSeconds, aspectRatio } = parsed.data;
+  const referenceImageUrls =
+    parsed.data.referenceImageUrls ??
+    (parsed.data.referenceImageUrl ? [parsed.data.referenceImageUrl] : []);
 
   let model;
   try {
@@ -45,8 +49,14 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-  if (model.requiresImage && !referenceImageUrl) {
-    return NextResponse.json({ error: `${model.label} needs a reference image` }, { status: 400 });
+  if (model.requiresImage && referenceImageUrls.length === 0) {
+    return NextResponse.json({ error: `${model.label} needs a photo` }, { status: 400 });
+  }
+  if (referenceImageUrls.length > maxImagesFor(model)) {
+    return NextResponse.json(
+      { error: `${model.label} takes at most ${maxImagesFor(model)} photo(s)` },
+      { status: 400 }
+    );
   }
 
   const { data: generation, error: insertError } = await supabase
@@ -57,7 +67,8 @@ export async function POST(request: NextRequest) {
       prompt,
       model: modelId,
       duration_seconds: durationSeconds,
-      reference_image_url: referenceImageUrl ?? null,
+      // Only the first photo is stored; it's used to pick the endpoint when polling status.
+      reference_image_url: referenceImageUrls[0] ?? null,
       status: "queued",
     })
     .select()
@@ -79,7 +90,7 @@ export async function POST(request: NextRequest) {
       modelId,
       prompt,
       durationSeconds,
-      referenceImageUrl,
+      referenceImageUrls,
       aspectRatio,
       webhookUrl,
     });

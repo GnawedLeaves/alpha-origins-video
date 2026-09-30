@@ -2,7 +2,7 @@ import "server-only";
 import { ApiError, ValidationError, fal } from "@fal-ai/client";
 import { requireEnv } from "@/lib/env";
 import type { AspectRatio } from "@/lib/types/domain";
-import { getFalModel, resolveFalEndpoint } from "./models";
+import { getFalModel, maxImagesFor, resolveFalEndpoint } from "./models";
 
 let configured = false;
 function ensureConfigured() {
@@ -15,7 +15,7 @@ export interface SubmitJobArgs {
   modelId: string;
   prompt: string;
   durationSeconds: number;
-  referenceImageUrl?: string;
+  referenceImageUrls?: string[];
   aspectRatio?: AspectRatio;
   webhookUrl?: string;
 }
@@ -27,14 +27,15 @@ export async function submitGenerationJob({
   modelId,
   prompt,
   durationSeconds,
-  referenceImageUrl,
+  referenceImageUrls = [],
   aspectRatio,
   webhookUrl,
 }: SubmitJobArgs) {
   ensureConfigured();
   const model = getFalModel(modelId);
 
-  const useImage = model.supportsImageToVideo && !!referenceImageUrl;
+  const images = referenceImageUrls.slice(0, maxImagesFor(model));
+  const useImage = images.length > 0;
   if (model.requiresImage && !useImage) {
     throw new Error(`${model.label} needs a reference image`);
   }
@@ -43,8 +44,11 @@ export async function submitGenerationJob({
     prompt,
     duration: String(durationSeconds),
   };
-  if (useImage) {
-    input.image_url = referenceImageUrl;
+  if (useImage && (model.maxImages ?? 1) > 1) {
+    input.image_urls = images;
+    input.prompt = withImageReferences(prompt, images.length);
+  } else if (useImage) {
+    input.image_url = images[0];
   }
   if (aspectRatio && model.aspectRatios?.includes(aspectRatio)) {
     input.aspect_ratio = aspectRatio;
@@ -56,6 +60,14 @@ export async function submitGenerationJob({
   });
 
   return request_id;
+}
+
+// Multi-photo models only use a photo the prompt mentions as @Image1, @Image2… If the prompt
+// doesn't mention any (e.g. it wasn't run through "Improve"), point at all of them.
+export function withImageReferences(prompt: string, count: number) {
+  if (/@Image\d/.test(prompt)) return prompt;
+  const refs = Array.from({ length: count }, (_, i) => `@Image${i + 1}`).join(", ");
+  return `${prompt.trim()} Use the reference photos ${refs} for how the dog, food and setting look.`;
 }
 
 export interface FalJobResult {

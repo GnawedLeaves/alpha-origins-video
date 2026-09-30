@@ -8,15 +8,18 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // "My photos": every photo uploaded is kept here, so it can be reused for future videos without
-// uploading it again.
+// uploading it again. Tapping toggles a photo; the order photos are picked in is their @Image
+// number for multi-photo models.
 export function PhotoAlbum({
-  selectedPath,
-  onSelect,
+  selectedPaths,
+  onToggle,
+  maxSelected,
   onClose,
   disabled,
 }: {
-  selectedPath: string | null;
-  onSelect: (photo: AlbumPhoto) => void;
+  selectedPaths: string[];
+  onToggle: (photo: AlbumPhoto) => void;
+  maxSelected: number;
   onClose: () => void;
   disabled?: boolean;
 }) {
@@ -61,9 +64,9 @@ export function PhotoAlbum({
     try {
       const added: AlbumPhoto[] = [];
       for (const file of files) added.push(await uploadToAlbum(supabase, userId, file));
-      setPhotos((prev) => [...added.reverse(), ...(prev ?? [])]);
-      // Uploading one photo usually means "use this one".
-      if (added.length === 1) onSelect(added[0]);
+      setPhotos((prev) => [...[...added].reverse(), ...(prev ?? [])]);
+      // Uploading a photo usually means "use this one": pick the new ones, up to the limit.
+      added.slice(0, Math.max(0, maxSelected - selectedPaths.length)).forEach(onToggle);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -95,11 +98,12 @@ export function PhotoAlbum({
         <div>
           <p className="text-lg font-semibold">My photos</p>
           <p className="text-muted-foreground">
-            Tap a photo to use it. Photos you upload are saved here for next time.
+            Tap the photos to use (up to {maxSelected}), tap again to unpick. Photos you upload are
+            saved here for next time.
           </p>
         </div>
-        <Button variant="ghost" onClick={onClose} className="h-10 px-3 text-base">
-          Done
+        <Button onClick={onClose} className="h-11 px-5 text-base">
+          <Check /> Done{selectedPaths.length > 0 ? ` (${selectedPaths.length})` : ""}
         </Button>
       </div>
 
@@ -130,15 +134,18 @@ export function PhotoAlbum({
           ))}
 
         {photos?.map((photo) => {
-          const selected = photo.path === selectedPath;
+          const order = selectedPaths.indexOf(photo.path);
+          const selected = order !== -1;
+          const full = !selected && selectedPaths.length >= maxSelected;
           return (
             <div key={photo.path} className="group relative">
               <button
                 type="button"
-                onClick={() => onSelect(photo)}
-                disabled={busy || deletingPath === photo.path}
+                onClick={() => onToggle(photo)}
+                disabled={busy || full || deletingPath === photo.path}
                 aria-pressed={selected}
-                aria-label={selected ? "Selected photo" : "Use this photo"}
+                aria-label={selected ? `Photo ${order + 1}, tap to unpick` : "Use this photo"}
+                title={full ? `You can use up to ${maxSelected} photos` : undefined}
                 className={cn(
                   "block aspect-square w-full overflow-hidden rounded-lg bg-muted ring-offset-2 ring-offset-background transition disabled:opacity-50",
                   selected ? "ring-4 ring-primary" : "ring-1 ring-border hover:ring-2 hover:ring-foreground/40"
@@ -148,8 +155,8 @@ export function PhotoAlbum({
                 <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
               </button>
               {selected && (
-                <span className="pointer-events-none absolute top-2 left-2 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Check className="size-5" />
+                <span className="pointer-events-none absolute top-2 left-2 flex size-8 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
+                  {maxSelected > 1 ? order + 1 : <Check className="size-5" />}
                 </span>
               )}
               <Button

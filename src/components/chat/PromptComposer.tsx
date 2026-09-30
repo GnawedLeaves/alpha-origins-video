@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Image as ImageIcon, Images, Loader2, Undo2, Video, Wand2, X } from "lucide-react";
-import { FAL_MODELS, getFalModel } from "@/lib/fal/models";
+import { FAL_MODELS, getFalModel, maxImagesFor } from "@/lib/fal/models";
 import type { AlbumPhoto } from "@/lib/album";
 import { PhotoAlbum } from "@/components/chat/PhotoAlbum";
 import type { AspectRatio, Generation } from "@/lib/types/domain";
@@ -23,6 +23,17 @@ import { cn } from "@/lib/utils";
 // photo attached -> Kling image-to-video.
 const TEXT_MODEL_ID = "kling-2.0";
 const PHOTO_MODEL_ID = "kling-2.0-image";
+const MULTI_PHOTO_MODEL_ID = "kling-o1-reference";
+const MAX_PHOTOS = 7;
+
+// The preferred model if it can take this many photos; otherwise the default for the count
+// (one -> image-to-video, several -> multi-photo). With no photos the preferred model is kept even
+// if it needs one, so a style picked under "More settings" sticks and asks for a photo.
+function pickModel(preferredId: string, photoCount: number) {
+  const preferred = getFalModel(preferredId);
+  if (photoCount <= maxImagesFor(preferred) || photoCount === 0) return preferred;
+  return getFalModel(photoCount === 1 ? PHOTO_MODEL_ID : MULTI_PHOTO_MODEL_ID);
+}
 
 const SHAPES: { value: AspectRatio; label: string; hint: string }[] = [
   { value: "9:16", label: "Tall", hint: "Reels, TikTok, Shorts" },
@@ -42,12 +53,15 @@ export function PromptComposer({
   const [prompt, setPrompt] = useState("");
   // What the user typed before "Improve" rewrote it, so they can go back.
   const [originalPrompt, setOriginalPrompt] = useState<string | null>(null);
-  const [modelId, setModelId] = useState(TEXT_MODEL_ID);
-  const [duration, setDuration] = useState(getFalModel(TEXT_MODEL_ID).durations[0]);
+  // The model the user chose under "More settings" (or the default). The model actually used is
+  // derived from this and the number of photos, see pickModel().
+  const [preferredModelId, setPreferredModelId] = useState(TEXT_MODEL_ID);
+  const [preferredDuration, setDuration] = useState(getFalModel(TEXT_MODEL_ID).durations[0]);
   // Tall by default: Reels, TikTok and Shorts are all 9:16.
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
+  const [preferredAspect, setAspectRatio] = useState<AspectRatio>("9:16");
   // Photos are uploaded to the album when picked, so this is already a stored, public photo.
-  const [referenceImage, setReferenceImage] = useState<AlbumPhoto | null>(null);
+  // In pick order: photo 1 is @Image1 for multi-photo models.
+  const [referenceImages, setReferenceImages] = useState<AlbumPhoto[]>([]);
   const [albumOpen, setAlbumOpen] = useState(false);
   const [refining, setRefining] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -71,31 +85,42 @@ export function PromptComposer({
     }
   }, [refining]);
 
-  const model = getFalModel(modelId);
+  const model = pickModel(preferredModelId, referenceImages.length);
+  const modelId = model.id;
+  // Fall back to the model's first option if the preferred one doesn't apply to it.
+  const duration = model.durations.includes(preferredDuration) ? preferredDuration : model.durations[0];
+  const aspectRatio =
+    !model.aspectRatios || model.aspectRatios.includes(preferredAspect)
+      ? preferredAspect
+      : model.aspectRatios[0];
   const busy = refining || submitting;
   const hasPrompt = prompt.trim().length > 0;
-  const missingImage = !!model.requiresImage && !referenceImage;
+  const missingImage = !!model.requiresImage && referenceImages.length === 0;
   const canGenerate = hasPrompt && !busy && !missingImage;
 
   function selectModel(id: string) {
-    setModelId(id);
-    const next = getFalModel(id);
-    if (!next.durations.includes(duration)) setDuration(next.durations[0]);
-    if (next.aspectRatios && !next.aspectRatios.includes(aspectRatio)) {
-      setAspectRatio(next.aspectRatios[0]);
-    }
-    if (!next.supportsImageToVideo) setReferenceImage(null);
+    setPreferredModelId(id);
+    // Choosing a model that takes fewer photos drops the extra ones.
+    setReferenceImages((prev) => prev.slice(0, maxImagesFor(getFalModel(id))));
   }
 
-  function selectPhoto(photo: AlbumPhoto) {
-    setReferenceImage(photo);
-    if (!model.supportsImageToVideo) selectModel(PHOTO_MODEL_ID);
-    setAlbumOpen(false);
+  function togglePhoto(photo: AlbumPhoto) {
+    // Updater form: the album may add several freshly uploaded photos in one go.
+    setReferenceImages((prev) =>
+      prev.some((p) => p.path === photo.path)
+        ? prev.filter((p) => p.path !== photo.path)
+        : prev.length < MAX_PHOTOS
+          ? [...prev, photo]
+          : prev
+    );
   }
 
-  function removePhoto() {
-    setReferenceImage(null);
-    if (model.requiresImage) selectModel(TEXT_MODEL_ID);
+  function removePhoto(path: string) {
+    setReferenceImages((prev) => prev.filter((p) => p.path !== path));
+  }
+
+  function clearPhotos() {
+    setReferenceImages([]);
   }
 
   async function handleRefine() {
@@ -111,7 +136,7 @@ export function PromptComposer({
           prompt,
           durationSeconds: duration,
           aspectRatio: model.aspectRatios ? aspectRatio : undefined,
-          hasReferenceImage: !!referenceImage,
+          referenceImageCount: referenceImages.length,
         }),
       });
       const body = await res.json();
@@ -140,7 +165,7 @@ export function PromptComposer({
     setSubmitting(true);
 
     try {
-      const referenceImageUrl = referenceImage?.url;
+      const referenceImageUrls = referenceImages.map((p) => p.url);
 
       const res = await fetch("/api/fal/generate", {
         method: "POST",
@@ -150,7 +175,7 @@ export function PromptComposer({
           prompt,
           modelId,
           durationSeconds: duration,
-          referenceImageUrl,
+          referenceImageUrls,
           aspectRatio: model.aspectRatios ? aspectRatio : undefined,
         }),
       });
@@ -170,7 +195,7 @@ export function PromptComposer({
         prompt,
         model: modelId,
         duration_seconds: duration,
-        reference_image_url: referenceImageUrl ?? null,
+        reference_image_url: referenceImageUrls[0] ?? null,
         fal_request_id: body.falRequestId,
         status: "processing",
         video_url: null,
@@ -182,7 +207,7 @@ export function PromptComposer({
 
       setPrompt("");
       setOriginalPrompt(null);
-      removePhoto();
+      clearPhotos();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -261,29 +286,49 @@ export function PromptComposer({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {referenceImage ? (
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={referenceImage.url}
-                alt="Your photo"
-                className="h-20 w-20 rounded-lg object-cover ring-1 ring-border"
-              />
-              <div>
-                <p className="font-medium">This photo will be brought to life.</p>
-                <div className="flex flex-wrap gap-x-4">
+          {referenceImages.length > 0 ? (
+            <div className="w-full">
+              <p className="font-medium">
+                {referenceImages.length === 1
+                  ? "This photo will be brought to life."
+                  : `These ${referenceImages.length} photos will be combined into one video.`}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {referenceImages.map((photo, i) => (
+                  <div key={photo.path} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url}
+                      alt={`Photo ${i + 1}`}
+                      className="h-20 w-20 rounded-lg object-cover ring-1 ring-border"
+                    />
+                    {referenceImages.length > 1 && (
+                      <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 text-sm font-semibold text-white">
+                        {i + 1}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(photo.path)}
+                      disabled={busy}
+                      aria-label={`Remove photo ${i + 1}`}
+                      title="Remove this photo"
+                      className="absolute -top-2 -right-2 flex size-7 items-center justify-center rounded-full bg-background text-foreground shadow-subtle-2 ring-1 ring-border hover:bg-accent disabled:opacity-50"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ))}
+                {!albumOpen && (
                   <Button
-                    variant="link"
+                    variant="outline"
                     onClick={() => setAlbumOpen(true)}
                     disabled={busy}
-                    className="h-auto p-0 text-base"
+                    className="h-20 px-4 text-base"
                   >
-                    <Images /> Change photo
+                    <Images /> {referenceImages.length < MAX_PHOTOS ? "Add or change photos" : "Change photos"}
                   </Button>
-                  <Button variant="link" onClick={removePhoto} disabled={busy} className="h-auto p-0 text-base">
-                    <X /> Remove photo
-                  </Button>
-                </div>
+                )}
               </div>
             </div>
           ) : (
@@ -295,7 +340,7 @@ export function PromptComposer({
                 disabled={busy}
                 className="h-11 px-4 text-base"
               >
-                <ImageIcon /> Add a photo (optional)
+                <ImageIcon /> Add photos (optional)
               </Button>
             )
           )}
@@ -303,8 +348,9 @@ export function PromptComposer({
 
         {albumOpen && (
           <PhotoAlbum
-            selectedPath={referenceImage?.path ?? null}
-            onSelect={selectPhoto}
+            selectedPaths={referenceImages.map((p) => p.path)}
+            onToggle={togglePhoto}
+            maxSelected={MAX_PHOTOS}
             onClose={() => setAlbumOpen(false)}
             disabled={busy}
           />

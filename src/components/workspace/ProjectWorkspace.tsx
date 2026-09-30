@@ -12,7 +12,16 @@ import { BrandVoiceConfig } from "@/components/captions/BrandVoiceConfig";
 import { ShareExportPanel } from "@/components/share/ShareExportPanel";
 import { useGenerations } from "@/hooks/useGenerations";
 import { getVideoMetadata } from "@/lib/utils/video";
-import type { BrandVoice, CaptionRecord, ExportRecord, Generation, Project } from "@/lib/types/domain";
+import type { MusicTrack } from "@/components/editor/timeline-model";
+import type { FitMode } from "@/components/editor/useFfmpeg";
+import type {
+  AspectRatio,
+  BrandVoice,
+  CaptionRecord,
+  ExportRecord,
+  Generation,
+  Project,
+} from "@/lib/types/domain";
 
 const TABS = ["Generate", "Editor", "Captions", "Share"] as const;
 type Tab = (typeof TABS)[number];
@@ -44,6 +53,12 @@ export function ProjectWorkspace({
   const [activeExport, setActiveExport] = useState<ExportRecord | null>(null);
   const [exportLocalUrl, setExportLocalUrl] = useState<string | null>(null);
   const [captions, setCaptions] = useState<CaptionRecord[]>(initialCaptions);
+  // Editor settings live here (not in Timeline) because tabs unmount when hidden: music and the
+  // chosen shape should still be there after visiting Captions.
+  const [music, setMusic] = useState<MusicTrack | null>(null);
+  // Tall by default: Reels, TikTok and Shorts are all 9:16.
+  const [exportAspect, setExportAspect] = useState<AspectRatio>("9:16");
+  const [exportFit, setExportFit] = useState<FitMode>("fill");
 
   const clipSourceIds = useMemo(() => new Set(clips.map((c) => c.id)), [clips]);
 
@@ -124,6 +139,13 @@ export function ProjectWorkspace({
             projectId={project.id}
             clips={clips}
             setClips={setClips}
+            music={music}
+            setMusic={setMusic}
+            aspectRatio={exportAspect}
+            setAspectRatio={setExportAspect}
+            fit={exportFit}
+            setFit={setExportFit}
+            finishedUrl={exportLocalUrl}
             onExportComplete={(record, localUrl) => {
               setActiveExport(record);
               setExportLocalUrl(localUrl);
