@@ -1,11 +1,12 @@
 import "server-only";
 import { fal } from "@fal-ai/client";
-import { getFalModel } from "./models";
+import { requireEnv } from "@/lib/env";
+import { getFalModel, resolveFalEndpoint } from "./models";
 
 let configured = false;
 function ensureConfigured() {
   if (configured) return;
-  fal.config({ credentials: process.env.FAL_KEY });
+  fal.config({ credentials: requireEnv("FAL_KEY", process.env.FAL_KEY) });
   configured = true;
 }
 
@@ -30,15 +31,20 @@ export async function submitGenerationJob({
   ensureConfigured();
   const model = getFalModel(modelId);
 
+  const useImage = model.supportsImageToVideo && !!referenceImageUrl;
+  if (model.requiresImage && !useImage) {
+    throw new Error(`${model.label} needs a reference image`);
+  }
+
   const input: Record<string, unknown> = {
     prompt,
     duration: String(durationSeconds),
   };
-  if (model.supportsImageToVideo && referenceImageUrl) {
+  if (useImage) {
     input.image_url = referenceImageUrl;
   }
 
-  const { request_id } = await fal.queue.submit(model.falEndpoint, {
+  const { request_id } = await fal.queue.submit(resolveFalEndpoint(model, useImage), {
     input,
     webhookUrl,
   });
@@ -53,20 +59,25 @@ export interface FalJobResult {
   error?: string;
 }
 
-export async function getJobStatus(modelId: string, requestId: string): Promise<FalJobResult> {
+export async function getJobStatus(
+  modelId: string,
+  requestId: string,
+  hasReferenceImage: boolean
+): Promise<FalJobResult> {
   ensureConfigured();
   const model = getFalModel(modelId);
+  const endpoint = resolveFalEndpoint(model, model.supportsImageToVideo && hasReferenceImage);
 
   let status;
   try {
-    status = await fal.queue.status(model.falEndpoint, { requestId, logs: false });
+    status = await fal.queue.status(endpoint, { requestId, logs: false });
   } catch (err) {
     // fal.ai's client throws on a failed/cancelled job rather than returning a "FAILED" status.
     return { status: "FAILED", error: (err as Error).message };
   }
 
   if (status.status === "COMPLETED") {
-    const result = await fal.queue.result(model.falEndpoint, { requestId });
+    const result = await fal.queue.result(endpoint, { requestId });
     const output = result.data as { video?: { url?: string }; image?: { url?: string } };
     return {
       status: "COMPLETED",

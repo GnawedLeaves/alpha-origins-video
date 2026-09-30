@@ -21,6 +21,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     .eq("project_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: captions } = await supabase
+    .from("captions")
+    .select("*")
+    .eq("project_id", id)
+    .order("created_at", { ascending: false });
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("brand_voice")
@@ -37,6 +43,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         project={project}
         userId={user.id}
         initialGenerations={generations ?? []}
+        initialCaptions={captions ?? []}
         brandVoice={
           profile?.brand_voice ?? {
             tone: "warm, trustworthy, a little playful",

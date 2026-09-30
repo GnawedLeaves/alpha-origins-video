@@ -1,8 +1,32 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
+import { requireEnv } from "@/lib/env";
 import type { BrandVoice, Platform } from "@/lib/types/domain";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Override with ANTHROPIC_MODEL in .env.local if you want a different model.
+const DEFAULT_MODEL = "claude-opus-5-5";
+
+let client: Anthropic | null = null;
+function anthropic() {
+  client ??= new Anthropic({
+    apiKey: requireEnv("ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY),
+  });
+  return client;
+}
+
+const PLATFORMS = ["instagram_reels", "facebook_ads", "tiktok", "youtube_shorts"] as const;
+
+const CaptionsSchema = z.object({
+  captions: z.array(
+    z.object({
+      platform: z.enum(PLATFORMS),
+      content: z.string(),
+      hashtags: z.array(z.string()),
+    })
+  ),
+});
 
 const PLATFORM_SPEC: Record<Platform, string> = {
   instagram_reels:
@@ -43,30 +67,28 @@ export async function generateCaptions({
 
 Never make veterinary or medical claims (e.g. "cures", "treats disease"). Focus on real ingredients, nutrition, and happy dogs.
 
-Respond with ONLY a JSON array, no prose, no markdown fences. Each element: { "platform": string, "content": string, "hashtags": string[] }. "content" must NOT include the hashtags inline — return them separately in "hashtags".`;
+Return one entry in "captions" per requested platform. "content" must NOT include the hashtags inline — return them separately in "hashtags", each starting with "#".`;
 
   const userPrompt = `Video ad context: ${videoContext}
 
 Generate one caption per platform below, following each platform's format exactly:
 ${platformInstructions}`;
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-5",
-    max_tokens: 2000,
+  const message = await anthropic().messages.parse({
+    model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+    max_tokens: 16000,
+    output_config: { effort: "low", format: zodOutputFormat(CaptionsSchema) },
     system: systemPrompt,
     messages: [{ role: "user", content: userPrompt }],
   });
 
-  const textBlock = message.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text response from caption generator");
+  if (message.stop_reason === "refusal") {
+    throw new Error("The caption generator declined this request — try rewording the video context");
   }
-
-  const jsonMatch = textBlock.text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
+  if (!message.parsed_output) {
     throw new Error("Could not parse caption generator response");
   }
 
-  const parsed = JSON.parse(jsonMatch[0]) as CaptionResult[];
-  return parsed;
+  const requested = new Set(platforms);
+  return message.parsed_output.captions.filter((c) => requested.has(c.platform));
 }

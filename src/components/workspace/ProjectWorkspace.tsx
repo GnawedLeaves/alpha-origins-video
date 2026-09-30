@@ -21,18 +21,20 @@ export function ProjectWorkspace({
   project,
   userId,
   initialGenerations,
+  initialCaptions,
   brandVoice,
 }: {
   project: Project;
   userId: string;
   initialGenerations: Generation[];
+  initialCaptions: CaptionRecord[];
   brandVoice: BrandVoice;
 }) {
   const [tab, setTab] = useState<Tab>("Generate");
   const { generations, addOptimistic } = useGenerations(project.id, initialGenerations);
   const [clips, setClips] = useState<EditorClip[]>([]);
   const [activeExport, setActiveExport] = useState<ExportRecord | null>(null);
-  const [captions, setCaptions] = useState<CaptionRecord[]>([]);
+  const [captions, setCaptions] = useState<CaptionRecord[]>(initialCaptions);
 
   const clipSourceIds = useMemo(() => new Set(clips.map((c) => c.id)), [clips]);
 

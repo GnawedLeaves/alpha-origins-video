@@ -32,7 +32,11 @@ export async function GET(
     return NextResponse.json({ status: generation.status, generation });
   }
 
-  const result = await getJobStatus(generation.model, requestId);
+  const result = await getJobStatus(
+    generation.model,
+    requestId,
+    !!generation.reference_image_url
+  );
 
   if (result.status === "COMPLETED") {
     const { data: updated } = await supabase

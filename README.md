@@ -16,7 +16,8 @@ in-browser, generate platform-tailored captions, and export/share the result.
 1. Create a project at [supabase.com](https://supabase.com).
 2. In the SQL editor, run `supabase/schema.sql`, then `supabase/policies.sql`. This creates the
    tables, RLS policies, the `reference-images` (public) and `exports` (private) storage buckets,
-   and a trigger that auto-creates a `profiles` row on signup.
+   a trigger that auto-creates a `profiles` row on signup, and adds `generations` to the
+   `supabase_realtime` publication for live status updates.
 3. In **Authentication → Providers**, email/password is enabled by default — that's all this app
    uses. Turn off "Confirm email" while developing locally if you don't want to click email
    confirmation links.
@@ -28,11 +29,15 @@ in-browser, generate platform-tailored captions, and export/share the result.
 cp .env.local.example .env.local
 ```
 
-Fill in:
+Fill in (every variable is also documented inline in `.env.local.example`; if one is missing, the
+app throws an error naming it):
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — from Supabase.
 - `FAL_KEY` — from [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys).
+- `FAL_WEBHOOK_SECRET` — any long random string (`openssl rand -hex 32`). The webhook callback URL
+  is HMAC-signed with it so nobody else can post fake results. Only used when webhooks are on.
 - `ANTHROPIC_API_KEY` — from [console.anthropic.com](https://console.anthropic.com).
+  `ANTHROPIC_MODEL` optionally overrides the caption model (default `claude-opus-5-5`).
 - `NEXT_PUBLIC_SITE_URL` — `http://localhost:3000` for local dev. **fal.ai webhooks need a public
   URL**, so in local dev the app automatically falls back to polling (`/api/fal/status/...`)
   instead of registering a webhook whenever `NEXT_PUBLIC_SITE_URL` contains `localhost`. If you

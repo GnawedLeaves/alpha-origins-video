@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { submitGenerationJob } from "@/lib/fal/client";
 import { getFalModel } from "@/lib/fal/models";
+import { signGenerationId } from "@/lib/fal/webhook-token";
 
 const bodySchema = z.object({
   projectId: z.string().uuid(),
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
   if (!model.durations.includes(durationSeconds)) {
     return NextResponse.json({ error: "Unsupported duration for this model" }, { status: 400 });
   }
+  if (model.requiresImage && !referenceImageUrl) {
+    return NextResponse.json({ error: `${model.label} needs a reference image` }, { status: 400 });
+  }
 
   const { data: generation, error: insertError } = await supabase
     .from("generations")
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   const webhookUrl =
     siteUrl && !siteUrl.includes("localhost")
-      ? `${siteUrl}/api/fal/webhook?generationId=${generation.id}`
+      ? `${siteUrl}/api/fal/webhook?generationId=${generation.id}&token=${signGenerationId(generation.id)}`
       : undefined;
 
   try {

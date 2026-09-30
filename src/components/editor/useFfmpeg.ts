@@ -6,6 +6,17 @@ import { fetchFile, toBlobURL } from "@ffmpeg/util";
 
 const CORE_BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
 
+// Every clip is scaled/padded to one resolution and frame rate so the concat step can stream-copy.
+// Different fal.ai models output different sizes, and concat with `-c copy` breaks on mismatches.
+// Audio is dropped: the text/image-to-video models in src/lib/fal/models.ts produce silent video,
+// and mixing clips with and without an audio track would also break concat.
+const OUTPUT_WIDTH = 1280;
+const OUTPUT_HEIGHT = 720;
+const OUTPUT_FPS = 30;
+const NORMALIZE_FILTER =
+  `scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=decrease,` +
+  `pad=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=${OUTPUT_FPS}`;
+
 export interface TimelineClip {
   id: string;
   sourceUrl: string;
@@ -38,8 +49,8 @@ export function useFfmpeg() {
     return ffmpeg;
   }, [loaded]);
 
-  // Trims each clip to [trimStart, trimEnd] (re-encoding for frame-accurate cuts), then concats
-  // them in order into a single MP4. Returns the rendered Blob.
+  // Trims each clip to [trimStart, trimEnd] (re-encoding for frame-accurate cuts and a uniform
+  // format), then concats them in order into a single MP4. Returns the rendered Blob.
   const renderTimeline = useCallback(
     async (clips: TimelineClip[]): Promise<Blob> => {
       const ffmpeg = await ensureLoaded();
@@ -59,12 +70,15 @@ export function useFfmpeg() {
           String(clip.trimEnd),
           "-i",
           inputName,
+          "-vf",
+          NORMALIZE_FILTER,
           "-c:v",
           "libx264",
           "-preset",
           "veryfast",
-          "-c:a",
-          "aac",
+          "-pix_fmt",
+          "yuv420p",
+          "-an",
           outputName,
         ]);
         outputs.push(outputName);
@@ -82,6 +96,8 @@ export function useFfmpeg() {
         "concat_list.txt",
         "-c",
         "copy",
+        "-movflags",
+        "+faststart",
         "final.mp4",
       ]);
 

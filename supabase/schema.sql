@@ -26,7 +26,13 @@ create table if not exists projects (
   updated_at timestamptz not null default now()
 );
 
-create type generation_status as enum ('queued', 'processing', 'completed', 'failed');
+do $$
+begin
+  create type generation_status as enum ('queued', 'processing', 'completed', 'failed');
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 create table if not exists generations (
   id uuid primary key default gen_random_uuid(),
@@ -118,3 +124,16 @@ create trigger set_projects_updated_at before update on projects
 drop trigger if exists set_generations_updated_at on generations;
 create trigger set_generations_updated_at before update on generations
   for each row execute procedure set_updated_at();
+
+-- Let the browser receive live generation status updates (src/hooks/useGenerations.ts subscribes
+-- via Supabase Realtime). RLS still applies, so users only receive their own rows.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'generations'
+  ) then
+    alter publication supabase_realtime add table generations;
+  end if;
+end;
+$$;

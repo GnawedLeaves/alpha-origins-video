@@ -127,6 +127,7 @@ export function PromptComposer({
   }
 
   const busy = submitting || uploading;
+  const missingImage = !!model.requiresImage && !referenceImage;
 
   return (
     <Card>
@@ -211,7 +212,7 @@ export function PromptComposer({
 
           <Button
             onClick={handleGenerate}
-            disabled={busy || !prompt.trim()}
+            disabled={busy || !prompt.trim() || missingImage}
             className="ml-auto"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
@@ -220,6 +221,9 @@ export function PromptComposer({
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">{model.description}</p>
+        {missingImage && (
+          <p className="mt-1 text-xs text-muted-foreground">Attach an image to use this model.</p>
+        )}
         {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
