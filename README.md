@@ -55,6 +55,29 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000). You'll land on `/login` — sign up, and you're
 in.
 
+## Troubleshooting sign-up / login
+
+Run this first. It checks `.env.local`, your Supabase keys, tables and auth settings, and prints
+what to fix (it never prints key values):
+
+```bash
+npm run check-setup
+```
+
+- **Changed `.env.local`?** Stop and restart `npm run dev`. Env vars are only read at startup.
+- **"Check your email for a confirmation link"**: Supabase's "Confirm email" setting is on (the
+  default). Click the link in the email, then sign in. For local development it's easier to turn it
+  off: **Authentication → Sign In / Providers → Email → uncheck "Confirm email"**.
+- **No confirmation email arrived / "email rate limit exceeded"**: Supabase's built-in mailer sends
+  only a few emails per hour and often lands in spam. Turn off "Confirm email" (above), or confirm
+  the user by hand in **Authentication → Users**.
+- **"Database error saving new user"**: the tables or signup trigger are missing. Run
+  `supabase/schema.sql`, then `supabase/policies.sql`, in the SQL editor.
+- **"Invalid API key" / "Couldn't reach Supabase"**: re-copy the Project URL and anon key from
+  **Project Settings → API**. The URL looks like `https://<project-ref>.supabase.co`.
+- **Confirmation link opens a broken page**: in **Authentication → URL Configuration**, set Site URL
+  to `http://localhost:3000` (and your production domain when you deploy).
+
 ## How it fits together
 
 - **Generate tab** (`PromptComposer` + `GenerationList`): submits a prompt (+ optional reference

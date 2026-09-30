@@ -96,7 +96,12 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id) values (new.id);
+  -- business_name comes from signUp's options.data (see src/app/login/page.tsx).
+  insert into public.profiles (id, business_name)
+  values (
+    new.id,
+    coalesce(nullif(new.raw_user_meta_data ->> 'business_name', ''), 'My Dog Food Brand')
+  );
   return new;
 end;
 $$;
