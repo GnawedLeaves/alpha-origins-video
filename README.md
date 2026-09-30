@@ -90,6 +90,11 @@ npm run check-setup
   Gemini rewrites a short idea into a detailed video prompt (one continuous shot sized to the clip
   length, camera/lighting/mood, no on-screen text, motion-only when a photo is attached). Inputs are
   locked while it runs; the cursor returns to the box so Enter sends it. Undo restores the original.
+- **My photos album** (`PhotoAlbum`, `src/lib/album.ts`): "Add a photo" opens the album. New photos
+  are shrunk in the browser (max 1920px JPEG) and saved straight away to the user's folder in the
+  `reference-images` bucket, so they can be picked again for later videos without re-uploading. The
+  album is just a listing of that folder — no extra table. Removing a photo deletes it from storage;
+  videos already made with it are unaffected. Picking a photo switches to the image-to-video model.
 - **1. Make clips** (`PromptComposer` + `GenerationList`): submits a prompt (+ optional reference
   image) to `/api/fal/generate`, which inserts a `generations` row and enqueues a fal.ai job.
   Status updates arrive via Supabase Realtime (webhook path) or a 4s poll fallback

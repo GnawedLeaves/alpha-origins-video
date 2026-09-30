@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Loader2, Undo2, Video, Wand2, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Image as ImageIcon, Images, Loader2, Undo2, Video, Wand2, X } from "lucide-react";
 import { FAL_MODELS, getFalModel } from "@/lib/fal/models";
+import type { AlbumPhoto } from "@/lib/album";
+import { PhotoAlbum } from "@/components/chat/PhotoAlbum";
 import type { AspectRatio, Generation } from "@/lib/types/domain";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,8 +37,6 @@ export function PromptComposer({
   projectId: string;
   onSubmitted: (generation: Generation) => void;
 }) {
-  const supabase = createClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [prompt, setPrompt] = useState("");
@@ -47,11 +46,10 @@ export function PromptComposer({
   const [duration, setDuration] = useState(getFalModel(TEXT_MODEL_ID).durations[0]);
   // Tall by default: Reels, TikTok and Shorts are all 9:16.
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
-  const [referenceImage, setReferenceImage] = useState<{ file: File; previewUrl: string } | null>(
-    null
-  );
+  // Photos are uploaded to the album when picked, so this is already a stored, public photo.
+  const [referenceImage, setReferenceImage] = useState<AlbumPhoto | null>(null);
+  const [albumOpen, setAlbumOpen] = useState(false);
   const [refining, setRefining] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +67,7 @@ export function PromptComposer({
   }, [refining]);
 
   const model = getFalModel(modelId);
-  const busy = refining || submitting || uploading;
+  const busy = refining || submitting;
   const hasPrompt = prompt.trim().length > 0;
   const missingImage = !!model.requiresImage && !referenceImage;
   const canGenerate = hasPrompt && !busy && !missingImage;
@@ -84,12 +82,10 @@ export function PromptComposer({
     if (!next.supportsImageToVideo) setReferenceImage(null);
   }
 
-  function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setReferenceImage({ file, previewUrl: URL.createObjectURL(file) });
+  function selectPhoto(photo: AlbumPhoto) {
+    setReferenceImage(photo);
     if (!model.supportsImageToVideo) selectModel(PHOTO_MODEL_ID);
+    setAlbumOpen(false);
   }
 
   function removePhoto() {
@@ -130,37 +126,13 @@ export function PromptComposer({
     setOriginalPrompt(null);
   }
 
-  async function uploadReferenceImage(): Promise<string | undefined> {
-    if (!referenceImage) return undefined;
-    setUploading(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please sign in again.");
-
-      const ext = referenceImage.file.name.split(".").pop() ?? "jpg";
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("reference-images")
-        .upload(path, referenceImage.file, { upsert: false });
-      if (uploadError) throw new Error(`Couldn't upload the photo: ${uploadError.message}`);
-
-      const { data } = supabase.storage.from("reference-images").getPublicUrl(path);
-      return data.publicUrl;
-    } finally {
-      setUploading(false);
-    }
-  }
-
   async function handleGenerate() {
     if (!canGenerate) return;
     setError(null);
     setSubmitting(true);
 
     try {
-      const referenceImageUrl = await uploadReferenceImage();
+      const referenceImageUrl = referenceImage?.url;
 
       const res = await fetch("/api/fal/generate", {
         method: "POST",
@@ -277,40 +249,54 @@ export function PromptComposer({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFilePick}
-          />
           {referenceImage ? (
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={referenceImage.previewUrl}
+                src={referenceImage.url}
                 alt="Your photo"
                 className="h-20 w-20 rounded-lg object-cover ring-1 ring-border"
               />
               <div>
-                <p className="font-medium">Your photo will be brought to life.</p>
-                <Button variant="link" onClick={removePhoto} disabled={busy} className="h-auto p-0 text-base">
-                  <X /> Remove photo
-                </Button>
+                <p className="font-medium">This photo will be brought to life.</p>
+                <div className="flex flex-wrap gap-x-4">
+                  <Button
+                    variant="link"
+                    onClick={() => setAlbumOpen(true)}
+                    disabled={busy}
+                    className="h-auto p-0 text-base"
+                  >
+                    <Images /> Change photo
+                  </Button>
+                  <Button variant="link" onClick={removePhoto} disabled={busy} className="h-auto p-0 text-base">
+                    <X /> Remove photo
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={busy}
-              className="h-11 px-4 text-base"
-            >
-              <ImageIcon /> Add a photo (optional)
-            </Button>
+            !albumOpen && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAlbumOpen(true)}
+                disabled={busy}
+                className="h-11 px-4 text-base"
+              >
+                <ImageIcon /> Add a photo (optional)
+              </Button>
+            )
           )}
         </div>
+
+        {albumOpen && (
+          <PhotoAlbum
+            selectedPath={referenceImage?.path ?? null}
+            onSelect={selectPhoto}
+            onClose={() => setAlbumOpen(false)}
+            disabled={busy}
+          />
+        )}
 
         <div className="flex flex-wrap gap-x-8 gap-y-4">
           {model.aspectRatios ? (
@@ -371,8 +357,8 @@ export function PromptComposer({
 
         <div className="flex flex-wrap items-center gap-4 border-t border-border pt-5">
           <Button onClick={handleGenerate} disabled={!canGenerate} className="h-12 px-6 text-lg">
-            {submitting || uploading ? <Loader2 className="animate-spin" /> : <Video />}
-            {uploading ? "Uploading photo…" : submitting ? "Starting…" : "Make video"}
+            {submitting ? <Loader2 className="animate-spin" /> : <Video />}
+            {submitting ? "Starting…" : "Make video"}
           </Button>
           <p className="text-muted-foreground">
             {missingImage
