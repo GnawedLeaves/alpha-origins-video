@@ -1,9 +1,11 @@
 "use client";
 
-import { CheckCircle2, Loader2, XCircle, Plus } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Loader2, Play, XCircle, Plus } from "lucide-react";
 import type { Generation } from "@/lib/types/domain";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ClipViewer } from "./ClipViewer";
 
 const STATUS_TEXT: Record<Generation["status"], string> = {
   queued: "Waiting to start…",
@@ -28,6 +30,8 @@ export function GenerationList({
   onAddToTimeline: (generation: Generation) => void;
   clipSourceIds: Set<string>;
 }) {
+  const [viewing, setViewing] = useState<Generation | null>(null);
+
   if (generations.length === 0) {
     return (
       <p className="mt-8 text-center text-body-sm text-muted-foreground">
@@ -37,19 +41,48 @@ export function GenerationList({
   }
 
   return (
+    <>
+    {viewing && (
+      <ClipViewer
+        generation={viewing}
+        added={clipSourceIds.has(viewing.id)}
+        onAdd={() => onAddToTimeline(viewing)}
+        onClose={() => setViewing(null)}
+      />
+    )}
     <ul className="mt-4 space-y-3">
       {generations.map((gen) => (
         <li
           key={gen.id}
           className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 sm:flex-nowrap"
         >
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
-            {gen.status === "completed" && gen.video_url ? (
-              <video src={gen.video_url} className="h-full w-full object-cover" muted />
-            ) : (
-              STATUS_ICON[gen.status]
-            )}
-          </div>
+          {gen.status === "completed" && gen.video_url ? (
+            <button
+              type="button"
+              onClick={() => setViewing(gen)}
+              aria-label="Watch this clip"
+              title="Watch this clip"
+              className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-black"
+            >
+              {/* #t=0.1 makes browsers (Safari especially) show the first frame as a thumbnail. */}
+              <video
+                src={`${gen.video_url}#t=0.1`}
+                preload="metadata"
+                muted
+                playsInline
+                className="pointer-events-none h-full w-full object-cover"
+              />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/40">
+                <span className="flex size-9 items-center justify-center rounded-full bg-white/90 text-forest-ink">
+                  <Play className="size-5 translate-x-px fill-current" />
+                </span>
+              </span>
+            </button>
+          ) : (
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+              {STATUS_ICON[gen.status]}
+            </div>
+          )}
 
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 text-foreground">{gen.prompt}</p>
@@ -83,5 +116,6 @@ export function GenerationList({
         </li>
       ))}
     </ul>
+    </>
   );
 }

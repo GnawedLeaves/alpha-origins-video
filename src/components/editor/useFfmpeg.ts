@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import type { AspectRatio } from "@/lib/types/domain";
+import { mediaUrl } from "@/lib/media";
 
 const CORE_BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
 
@@ -81,7 +82,8 @@ export function useFfmpeg() {
         const inputName = `in_${i}.mp4`;
         const outputName = `trim_${i}.mp4`;
 
-        await ffmpeg.writeFile(inputName, await fetchFile(clip.sourceUrl));
+        // Through our own origin: fal's CDN may not send the CORS headers fetch() needs.
+        await ffmpeg.writeFile(inputName, await fetchFile(mediaUrl(clip.sourceUrl)));
         await ffmpeg.exec([
           "-ss",
           String(clip.trimStart),

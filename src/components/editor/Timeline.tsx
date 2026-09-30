@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { ArrowRight, Download, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ClipTrimmer, type EditorClip } from "./ClipTrimmer";
 import { VideoPreviewPlayer } from "./VideoPreviewPlayer";
+import { TimelinePreview } from "./TimelinePreview";
+import { downloadFile } from "@/lib/media";
 import { useFfmpeg, type FitMode } from "./useFfmpeg";
 import { ASPECT_RATIO_LABELS, type AspectRatio, type ExportRecord } from "@/lib/types/domain";
 import { orientationOf } from "@/lib/utils/video";
@@ -25,11 +27,13 @@ export function Timeline({
   clips,
   setClips,
   onExportComplete,
+  onContinue,
 }: {
   projectId: string;
   clips: EditorClip[];
   setClips: (updater: (prev: EditorClip[]) => EditorClip[]) => void;
   onExportComplete: (exportRecord: ExportRecord, previewUrl: string) => void;
+  onContinue: () => void;
 }) {
   const supabase = createClient();
   const { renderTimeline, loading: ffmpegLoading, progress, stage } = useFfmpeg();
@@ -52,14 +56,18 @@ export function Timeline({
     setClips((prev) => prev.filter((c) => c.id !== id));
   }
 
-  function splitClip(id: string) {
+  // Splits a clip into two at `at` seconds (the paused playhead); falls back to the midpoint.
+  function splitClip(id: string, at?: number) {
     setClips((prev) => {
       const idx = prev.findIndex((c) => c.id === id);
       if (idx === -1) return prev;
       const clip = prev[idx];
-      const midpoint = (clip.trimStart + clip.trimEnd) / 2;
-      const first: EditorClip = { ...clip, trimEnd: midpoint };
-      const second: EditorClip = { ...clip, id: crypto.randomUUID(), trimStart: midpoint };
+      const cut =
+        at !== undefined && at > clip.trimStart && at < clip.trimEnd
+          ? at
+          : (clip.trimStart + clip.trimEnd) / 2;
+      const first: EditorClip = { ...clip, trimEnd: cut };
+      const second: EditorClip = { ...clip, id: crypto.randomUUID(), trimStart: cut };
       return [...prev.slice(0, idx), first, second, ...prev.slice(idx + 1)];
     });
   }
@@ -157,13 +165,13 @@ export function Timeline({
       </div>
 
       <div>
-        <h3 className="text-base font-semibold text-foreground">Final video</h3>
+        <h3 className="text-base font-semibold text-foreground">Preview</h3>
         <div className="mt-3">
-          <VideoPreviewPlayer
-            src={previewUrl}
-            aspectRatio={aspectRatio}
-            label={previewUrl ? "Rendered export" : undefined}
-          />
+          {clips.length > 0 ? (
+            <TimelinePreview clips={clips} aspectRatio={aspectRatio} fit={fit} />
+          ) : (
+            <VideoPreviewPlayer src={null} aspectRatio={aspectRatio} />
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-start gap-4">
@@ -220,9 +228,9 @@ export function Timeline({
         <Button
           onClick={handleExport}
           disabled={clips.length === 0 || rendering}
-          className="mt-4 w-full"
+          className="mt-4 h-12 w-full text-lg"
         >
-          {rendering ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          {rendering ? <Loader2 className="animate-spin" /> : <Download />}
           {rendering
             ? stage || (ffmpegLoading ? "Loading video engine…" : `Rendering… ${Math.round(progress * 100)}%`)
             : "Make final video"}
@@ -231,6 +239,30 @@ export function Timeline({
           This joins your clips into one video. It can take a minute — keep this page open.
         </p>
         {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+        {previewUrl && (
+          <div className="mt-8 border-t border-border pt-6">
+            <h3 className="text-base font-semibold text-foreground">Your finished video</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Saved. Changed something above? Press &ldquo;Make final video&rdquo; again.
+            </p>
+            <div className="mt-3">
+              <VideoPreviewPlayer src={previewUrl} aspectRatio={aspectRatio} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Button onClick={onContinue} className="h-11 px-4 text-base">
+                Next: write captions <ArrowRight />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => downloadFile(previewUrl, "alpha-origins-ad.mp4")}
+                className="h-11 px-4 text-base"
+              >
+                <Download /> Download video
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

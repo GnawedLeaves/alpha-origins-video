@@ -6,12 +6,16 @@ import { PLATFORM_LABELS, type CaptionRecord, type ExportRecord } from "@/lib/ty
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { downloadFile, mediaUrl } from "@/lib/media";
 
 export function ShareExportPanel({
   activeExport,
+  localUrl,
   captions,
 }: {
   activeExport: ExportRecord | null;
+  // The just-rendered video still in memory (blob: URL); faster than fetching it back.
+  localUrl?: string | null;
   captions: CaptionRecord[];
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -31,7 +35,7 @@ export function ShareExportPanel({
         const text = caption ? `${caption.content}\n\n${caption.hashtags.join(" ")}` : undefined;
 
         if (navigator.canShare) {
-          const res = await fetch(activeExport.video_url);
+          const res = await fetch(localUrl ?? mediaUrl(activeExport.video_url));
           const blob = await res.blob();
           const file = new File([blob], "ad.mp4", { type: "video/mp4" });
           if (navigator.canShare({ files: [file] })) {
@@ -70,8 +74,11 @@ export function ShareExportPanel({
           />
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button render={<a href={activeExport.video_url} download="alpha-origins-ad.mp4" />}>
-              <Download size={14} /> Download MP4
+            <Button
+              onClick={() => downloadFile(localUrl ?? activeExport.video_url, "alpha-origins-ad.mp4")}
+              className="h-11 px-4 text-base"
+            >
+              <Download /> Download video
             </Button>
             <Button variant="outline" onClick={() => nativeShare()}>
               <Share2 size={14} /> Share

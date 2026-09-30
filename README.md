@@ -109,6 +109,14 @@ npm run check-setup
   image) to `/api/fal/generate`, which inserts a `generations` row and enqueues a fal.ai job.
   Status updates arrive via Supabase Realtime (webhook path) or a 4s poll fallback
   (`useGenerations`).
+- **Watching clips**: tapping a finished clip's thumbnail opens `ClipViewer` (full-size player,
+  "Use this clip", "Download clip"). In step 2 each clip has its own player (`ClipTrimmer`) that
+  plays only the kept part, a trim slider that shows the frame at the cut point, and "Cut here"
+  (splits at the paused spot). `TimelinePreview` plays the whole timeline in order, framed like
+  the export, before anything is rendered.
+- **Downloads / ffmpeg input** go through `/api/media` (`src/app/api/media/route.ts`), a signed-in,
+  same-origin pass-through limited to fal.ai media and this project's Supabase storage. Browsers
+  ignore `<a download>` on cross-origin URLs, and ffmpeg-wasm needs CORS to read clip bytes.
 - **2. Put together** (`Timeline`): add completed generations to an in-memory timeline, trim/split/
   reorder clips, then "Trim, merge & export" runs `@ffmpeg/ffmpeg` in the browser to produce a
   single MP4, uploads it to the `exports` bucket, and saves the metadata via `/api/exports`.

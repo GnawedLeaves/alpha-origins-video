@@ -11,7 +11,7 @@ import { CaptionResults } from "@/components/captions/CaptionResults";
 import { BrandVoiceConfig } from "@/components/captions/BrandVoiceConfig";
 import { ShareExportPanel } from "@/components/share/ShareExportPanel";
 import { useGenerations } from "@/hooks/useGenerations";
-import { getVideoMetadata, type VideoMetadata } from "@/lib/utils/video";
+import { getVideoMetadata } from "@/lib/utils/video";
 import type { BrandVoice, CaptionRecord, ExportRecord, Generation, Project } from "@/lib/types/domain";
 
 const TABS = ["Generate", "Editor", "Captions", "Share"] as const;
@@ -42,34 +42,56 @@ export function ProjectWorkspace({
   const { generations, addOptimistic } = useGenerations(project.id, initialGenerations);
   const [clips, setClips] = useState<EditorClip[]>([]);
   const [activeExport, setActiveExport] = useState<ExportRecord | null>(null);
+  const [exportLocalUrl, setExportLocalUrl] = useState<string | null>(null);
   const [captions, setCaptions] = useState<CaptionRecord[]>(initialCaptions);
 
   const clipSourceIds = useMemo(() => new Set(clips.map((c) => c.id)), [clips]);
 
-  async function handleAddToTimeline(generation: Generation) {
-    if (!generation.video_url) return;
-    let meta: Partial<VideoMetadata> = {};
-    try {
-      meta = await getVideoMetadata(generation.video_url);
-    } catch {
-      // fall back to the requested duration if metadata probing fails (e.g. CORS)
-    }
-    const duration = meta.duration ?? generation.duration_seconds;
-    setClips((prev) => [
-      ...prev,
-      {
-        id: generation.id,
-        label: generation.prompt,
-        sourceUrl: generation.video_url!,
-        thumbnailUrl: generation.thumbnail_url,
-        duration,
-        width: meta.width,
-        height: meta.height,
-        trimStart: 0,
-        trimEnd: duration,
-      },
-    ]);
+  function handleAddToTimeline(generation: Generation) {
+    const url = generation.video_url;
+    if (!url) return;
+    const requested = generation.duration_seconds;
+    // Add straight away so the button flips to "Added" on the first press (and can't add the same
+    // clip twice); the exact length and frame size are filled in once the browser has read them.
+    setClips((prev) =>
+      prev.some((c) => c.id === generation.id)
+        ? prev
+        : [
+            ...prev,
+            {
+              id: generation.id,
+              label: generation.prompt,
+              sourceUrl: url,
+              thumbnailUrl: generation.thumbnail_url,
+              duration: requested,
+              trimStart: 0,
+              trimEnd: requested,
+            },
+          ]
+    );
+    getVideoMetadata(url)
+      .then((meta) => {
+        setClips((prev) =>
+          prev.map((c) => {
+            // Also update pieces split from this clip; only move an end the user hasn't trimmed.
+            if (c.sourceUrl !== url) return c;
+            const trimEnd = c.trimEnd === requested ? meta.duration : Math.min(c.trimEnd, meta.duration);
+            return {
+              ...c,
+              duration: meta.duration,
+              width: meta.width,
+              height: meta.height,
+              trimStart: Math.min(c.trimStart, Math.max(0, trimEnd - 0.1)),
+              trimEnd,
+            };
+          })
+        );
+      })
+      .catch(() => {
+        // Keep the requested length if the browser can't read the file's details.
+      });
   }
+
 
   const latestPrompt = generations[0]?.prompt ?? project.name;
 
@@ -102,10 +124,11 @@ export function ProjectWorkspace({
             projectId={project.id}
             clips={clips}
             setClips={setClips}
-            onExportComplete={(record) => {
+            onExportComplete={(record, localUrl) => {
               setActiveExport(record);
-              setTab("Captions");
+              setExportLocalUrl(localUrl);
             }}
+            onContinue={() => setTab("Captions")}
           />
         </TabsContent>
 
@@ -125,7 +148,7 @@ export function ProjectWorkspace({
         </TabsContent>
 
         <TabsContent value="Share">
-          <ShareExportPanel activeExport={activeExport} captions={captions} />
+          <ShareExportPanel activeExport={activeExport} localUrl={exportLocalUrl} captions={captions} />
         </TabsContent>
       </div>
     </Tabs>

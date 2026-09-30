@@ -11,8 +11,9 @@ export function getVideoMetadata(url: string): Promise<VideoMetadata> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";
+    // No crossOrigin here: duration and size are readable without CORS (only pixels need it), so
+    // this works even if the video host doesn't send CORS headers.
     video.src = url;
-    video.crossOrigin = "anonymous";
     video.onloadedmetadata = () =>
       resolve({ duration: video.duration, width: video.videoWidth, height: video.videoHeight });
     video.onerror = () => reject(new Error("Could not read video metadata"));
