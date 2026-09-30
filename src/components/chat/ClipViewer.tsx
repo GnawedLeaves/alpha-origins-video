@@ -5,6 +5,7 @@ import { Download, Plus, X } from "lucide-react";
 import type { Generation } from "@/lib/types/domain";
 import { downloadFile } from "@/lib/media";
 import { Button } from "@/components/ui/button";
+import { ExpandableText } from "@/components/common/ExpandableText";
 
 // Full-size player for one finished clip. Uses the native <dialog> so Esc and the backdrop close it
 // and focus stays inside while it's open.
@@ -39,7 +40,7 @@ export function ClipViewer({
     >
       <div className="p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <p className="line-clamp-3 min-w-0 flex-1 text-foreground">{generation.prompt}</p>
+          <ExpandableText text={generation.prompt} lines={3} threshold={200} className="min-w-0 flex-1 text-foreground" />
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" title="Close">
             <X />
           </Button>

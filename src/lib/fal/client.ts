@@ -77,6 +77,14 @@ export interface FalJobResult {
   error?: string;
 }
 
+// A temporary problem talking to fal.ai (network, 5xx, rate limit): check again later instead of
+// marking the video as failed.
+export class RetryableFalError extends Error {}
+
+function isPermanentFalError(err: unknown) {
+  return err instanceof ApiError && err.status >= 400 && err.status < 500 && err.status !== 429;
+}
+
 export async function getJobStatus(
   modelId: string,
   requestId: string,
@@ -90,22 +98,49 @@ export async function getJobStatus(
   try {
     status = await fal.queue.status(endpoint, { requestId, logs: false });
   } catch (err) {
-    // fal.ai's client throws on a failed/cancelled job rather than returning a "FAILED" status.
-    return { status: "FAILED", error: (err as Error).message };
+    // 4xx (unknown/cancelled request, bad key...) won't fix itself; anything else might.
+    if (isPermanentFalError(err)) return { status: "FAILED", error: describeFalError(err) };
+    throw new RetryableFalError(describeFalError(err));
   }
 
   if (status.status === "COMPLETED") {
-    const result = await fal.queue.result(endpoint, { requestId });
+    // fal marks failed jobs COMPLETED too; the error only shows up when fetching the result.
+    let result;
+    try {
+      result = await fal.queue.result(endpoint, { requestId });
+    } catch (err) {
+      if (isPermanentFalError(err)) return { status: "FAILED", error: describeFalError(err) };
+      throw new RetryableFalError(describeFalError(err));
+    }
     const output = result.data as { video?: { url?: string }; image?: { url?: string } };
+    if (!output?.video?.url) {
+      return { status: "FAILED", error: "fal.ai finished but didn't return a video. Please try again." };
+    }
     return {
       status: "COMPLETED",
-      videoUrl: output.video?.url,
+      videoUrl: output.video.url,
       thumbnailUrl: output.image?.url,
     };
   }
 
   if (status.status === "IN_PROGRESS") return { status: "IN_PROGRESS" };
   return { status: "IN_QUEUE" };
+}
+
+// Asks fal.ai to stop a job. fal can only cancel jobs still waiting in the queue; one that has
+// already started may run to the end (and be billed). Errors are swallowed: the caller marks the
+// generation cancelled either way.
+export async function cancelJob(modelId: string, requestId: string, hasReferenceImage: boolean) {
+  ensureConfigured();
+  const model = getFalModel(modelId);
+  const endpoint = resolveFalEndpoint(model, model.supportsImageToVideo && hasReferenceImage);
+  try {
+    await fal.queue.cancel(endpoint, { requestId });
+    return true;
+  } catch (err) {
+    console.warn("fal.ai cancel failed (the job may already be running):", describeFalError(err));
+    return false;
+  }
 }
 
 // Normalizes a fal.ai webhook payload (shape: { request_id, status, payload }) into the same

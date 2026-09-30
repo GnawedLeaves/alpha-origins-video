@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Pause, Play, Scissors, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { ExpandableText } from "@/components/common/ExpandableText";
 
 export interface EditorClip {
   id: string;
@@ -109,7 +110,7 @@ export function ClipTrimmer({
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <p className="font-semibold">Clip {index + 1}</p>
-            <p className="line-clamp-2 text-sm text-muted-foreground">{clip.label}</p>
+            <ExpandableText text={clip.label} className="text-sm text-muted-foreground" />
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <Button

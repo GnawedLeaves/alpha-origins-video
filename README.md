@@ -94,6 +94,18 @@ npm run check-setup
   with no credit (new fal.ai accounts need credit added at fal.ai/dashboard/billing), or a photo fal
   couldn't use. The full error is also printed in the `npm run dev` terminal.
 
+## When a video gets stuck
+
+- The page checks each unfinished video every few seconds, backing off when a check fails. After
+  3 failed checks in a row the card says **"We couldn't check on this video"** with the reason and a
+  **Try again** button, and stops checking until pressed. A job fal.ai reports as failed shows
+  "Didn't work" with the reason under "What went wrong?" (fal marks failed jobs COMPLETED and only
+  returns the error when the result is fetched; `getJobStatus` handles this).
+- **Cancel** (on unfinished videos) asks fal.ai to stop the job (`/api/generations/[id]/cancel`)
+  and marks it cancelled (stored as status `failed` with error `Cancelled`, so no migration is
+  needed). fal can only stop jobs still waiting in its queue; one that already started may finish
+  and be billed, but it won't be shown. Failed/cancelled cards can be **Removed**.
+
 ## How it fits together
 
 - **Improve my description** (`PromptComposer` → `/api/prompts/refine` → `src/lib/ai/refine-prompt.ts`):

@@ -6,6 +6,14 @@
 
 export type GenerationStatus = "queued" | "processing" | "completed" | "failed";
 
+// A cancelled generation is stored as status "failed" with this error text (the status enum in
+// supabase/schema.sql has no "cancelled", and this avoids a migration).
+export const CANCELLED_ERROR = "Cancelled";
+
+export function isCancelled(g: { status: GenerationStatus; error: string | null }) {
+  return g.status === "failed" && g.error === CANCELLED_ERROR;
+}
+
 export type AspectRatio = "16:9" | "9:16" | "1:1";
 
 export const ASPECT_RATIO_LABELS: Record<AspectRatio, string> = {

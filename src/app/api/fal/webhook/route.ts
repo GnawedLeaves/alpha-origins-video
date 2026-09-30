@@ -30,12 +30,15 @@ export async function POST(request: NextRequest) {
         video_url: result.videoUrl,
         thumbnail_url: result.thumbnailUrl,
       })
-      .eq("id", generationId);
+      .eq("id", generationId)
+      // A video the user cancelled stays cancelled.
+      .in("status", ["queued", "processing"]);
   } else if (result.status === "FAILED") {
     await supabase
       .from("generations")
       .update({ status: "failed", error: result.error })
-      .eq("id", generationId);
+      .eq("id", generationId)
+      .in("status", ["queued", "processing"]);
   }
 
   return NextResponse.json({ ok: true });

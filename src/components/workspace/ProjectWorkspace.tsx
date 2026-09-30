@@ -48,7 +48,10 @@ export function ProjectWorkspace({
   brandVoice: BrandVoice;
 }) {
   const [tab, setTab] = useState<Tab>("Generate");
-  const { generations, addOptimistic } = useGenerations(project.id, initialGenerations);
+  const { generations, addOptimistic, checkErrors, retryCheck, cancel, remove } = useGenerations(
+    project.id,
+    initialGenerations
+  );
   const [clips, setClips] = useState<EditorClip[]>([]);
   const [activeExport, setActiveExport] = useState<ExportRecord | null>(null);
   const [exportLocalUrl, setExportLocalUrl] = useState<string | null>(null);
@@ -130,6 +133,10 @@ export function ProjectWorkspace({
           <GenerationList
             generations={generations}
             onAddToTimeline={handleAddToTimeline}
+            checkErrors={checkErrors}
+            onRetryCheck={retryCheck}
+            onCancel={cancel}
+            onRemove={remove}
             clipSourceIds={clipSourceIds}
           />
         </TabsContent>
