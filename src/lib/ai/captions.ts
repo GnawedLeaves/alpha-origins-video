@@ -1,8 +1,19 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
+import { generateJson } from "@/lib/ai/gemini";
 import type { BrandVoice, Platform } from "@/lib/types/domain";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const PLATFORMS = ["instagram_reels", "facebook_ads", "tiktok", "youtube_shorts"] as const;
+
+const CaptionsSchema = z.object({
+  captions: z.array(
+    z.object({
+      platform: z.enum(PLATFORMS),
+      content: z.string(),
+      hashtags: z.array(z.string()),
+    })
+  ),
+});
 
 const PLATFORM_SPEC: Record<Platform, string> = {
   instagram_reels:
@@ -25,16 +36,18 @@ export async function generateCaptions({
   platforms,
   videoContext,
   brandVoice,
+  businessName,
 }: {
   platforms: Platform[];
   videoContext: string;
   brandVoice: BrandVoice;
+  businessName: string;
 }): Promise<CaptionResult[]> {
   const platformInstructions = platforms
     .map((p) => `- ${p}: ${PLATFORM_SPEC[p]}`)
     .join("\n");
 
-  const systemPrompt = `You are a social media copywriter for a dog food brand. Write captions strictly in this brand voice:
+  const systemPrompt = `You are a social media copywriter for ${businessName}, a dog food brand. Write captions strictly in this brand voice:
 - Tone: ${brandVoice.tone}
 - Brand pillars to draw on: ${brandVoice.pillars.join(", ")}
 - Avoid: ${brandVoice.avoid.join(", ")}
@@ -43,30 +56,19 @@ export async function generateCaptions({
 
 Never make veterinary or medical claims (e.g. "cures", "treats disease"). Focus on real ingredients, nutrition, and happy dogs.
 
-Respond with ONLY a JSON array, no prose, no markdown fences. Each element: { "platform": string, "content": string, "hashtags": string[] }. "content" must NOT include the hashtags inline — return them separately in "hashtags".`;
+Return one entry in "captions" per requested platform. "content" must NOT include the hashtags inline — return them separately in "hashtags", each starting with "#".`;
 
   const userPrompt = `Video ad context: ${videoContext}
 
 Generate one caption per platform below, following each platform's format exactly:
 ${platformInstructions}`;
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-5",
-    max_tokens: 2000,
+  const result = await generateJson({
+    schema: CaptionsSchema,
     system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
+    user: userPrompt,
   });
 
-  const textBlock = message.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text response from caption generator");
-  }
-
-  const jsonMatch = textBlock.text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error("Could not parse caption generator response");
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]) as CaptionResult[];
-  return parsed;
+  const requested = new Set(platforms);
+  return result.captions.filter((c) => requested.has(c.platform));
 }

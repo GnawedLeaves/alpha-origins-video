@@ -1,4 +1,4 @@
--- Alpha Origins schema
+-- Keemu schema (video ads for Alpha Origins)
 -- Run this in the Supabase SQL editor (or via `supabase db push`) after creating a new project.
 
 create extension if not exists "pgcrypto";
@@ -6,7 +6,7 @@ create extension if not exists "pgcrypto";
 -- One row per authenticated user, created by the handle_new_user trigger below.
 create table if not exists profiles (
   id uuid primary key references auth.users (id) on delete cascade,
-  business_name text not null default 'My Dog Food Brand',
+  business_name text not null default 'Alpha Origins',
   brand_voice jsonb not null default '{
     "tone": "warm, trustworthy, a little playful",
     "pillars": ["real ingredients", "vet-formulated nutrition", "happy, healthy dogs"],
@@ -26,7 +26,13 @@ create table if not exists projects (
   updated_at timestamptz not null default now()
 );
 
-create type generation_status as enum ('queued', 'processing', 'completed', 'failed');
+do $$
+begin
+  create type generation_status as enum ('queued', 'processing', 'completed', 'failed');
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 create table if not exists generations (
   id uuid primary key default gen_random_uuid(),
@@ -90,7 +96,12 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id) values (new.id);
+  -- business_name comes from signUp's options.data (see src/app/login/page.tsx).
+  insert into public.profiles (id, business_name)
+  values (
+    new.id,
+    coalesce(nullif(new.raw_user_meta_data ->> 'business_name', ''), 'Alpha Origins')
+  );
   return new;
 end;
 $$;
@@ -118,3 +129,16 @@ create trigger set_projects_updated_at before update on projects
 drop trigger if exists set_generations_updated_at on generations;
 create trigger set_generations_updated_at before update on generations
   for each row execute procedure set_updated_at();
+
+-- Let the browser receive live generation status updates (src/hooks/useGenerations.ts subscribes
+-- via Supabase Realtime). RLS still applies, so users only receive their own rows.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'generations'
+  ) then
+    alter publication supabase_realtime add table generations;
+  end if;
+end;
+$$;

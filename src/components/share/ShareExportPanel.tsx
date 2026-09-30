@@ -6,12 +6,16 @@ import { PLATFORM_LABELS, type CaptionRecord, type ExportRecord } from "@/lib/ty
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { downloadFile, mediaUrl } from "@/lib/media";
 
 export function ShareExportPanel({
   activeExport,
+  localUrl,
   captions,
 }: {
   activeExport: ExportRecord | null;
+  // The just-rendered video still in memory (blob: URL); faster than fetching it back.
+  localUrl?: string | null;
   captions: CaptionRecord[];
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -31,7 +35,7 @@ export function ShareExportPanel({
         const text = caption ? `${caption.content}\n\n${caption.hashtags.join(" ")}` : undefined;
 
         if (navigator.canShare) {
-          const res = await fetch(activeExport.video_url);
+          const res = await fetch(localUrl ?? mediaUrl(activeExport.video_url));
           const blob = await res.blob();
           const file = new File([blob], "ad.mp4", { type: "video/mp4" });
           if (navigator.canShare({ files: [file] })) {
@@ -50,9 +54,12 @@ export function ShareExportPanel({
 
   if (!activeExport) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Export a video from the Editor tab first, then come back here to download or share it.
-      </p>
+      <div className="max-w-md rounded-xl bg-sticky-note-teal p-6 text-forest-ink">
+        <p className="font-semibold">Nothing to share yet</p>
+        <p className="mt-1 text-sm">
+          Export a video from the Editor tab first, then come back here to download or share it.
+        </p>
+      </div>
     );
   }
 
@@ -60,11 +67,18 @@ export function ShareExportPanel({
     <div className="space-y-4">
       <Card>
         <CardContent>
-          <video src={activeExport.video_url} controls className="aspect-video w-full rounded-lg bg-black" />
+          <video
+            src={activeExport.video_url}
+            controls
+            className="max-h-[70vh] w-full rounded-lg bg-black object-contain"
+          />
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button render={<a href={activeExport.video_url} download="alpha-origins-ad.mp4" />}>
-              <Download size={14} /> Download MP4
+            <Button
+              onClick={() => downloadFile(localUrl ?? activeExport.video_url, "alpha-origins-ad.mp4")}
+              className="h-11 px-4 text-base"
+            >
+              <Download /> Download video
             </Button>
             <Button variant="outline" onClick={() => nativeShare()}>
               <Share2 size={14} /> Share
@@ -92,7 +106,7 @@ export function ShareExportPanel({
                   </div>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{caption.content}</p>
-                <p className="mt-2 text-xs text-primary">{caption.hashtags.join(" ")}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{caption.hashtags.join(" ")}</p>
               </CardContent>
             </Card>
           ))}

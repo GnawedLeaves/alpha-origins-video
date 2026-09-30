@@ -1,12 +1,21 @@
 // Client-only helpers — pure HTML5 video + canvas, no ffmpeg needed for these.
+import type { AspectRatio } from "@/lib/types/domain";
 
-export function getVideoDuration(url: string): Promise<number> {
+export interface VideoMetadata {
+  duration: number;
+  width: number;
+  height: number;
+}
+
+export function getVideoMetadata(url: string): Promise<VideoMetadata> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";
+    // No crossOrigin here: duration and size are readable without CORS (only pixels need it), so
+    // this works even if the video host doesn't send CORS headers.
     video.src = url;
-    video.crossOrigin = "anonymous";
-    video.onloadedmetadata = () => resolve(video.duration);
+    video.onloadedmetadata = () =>
+      resolve({ duration: video.duration, width: video.videoWidth, height: video.videoHeight });
     video.onerror = () => reject(new Error("Could not read video metadata"));
   });
 }
@@ -33,4 +42,10 @@ export function extractThumbnail(url: string, atSeconds = 0.1): Promise<Blob> {
     };
     video.onerror = () => reject(new Error("Could not load video"));
   });
+}
+
+export function orientationOf(width: number, height: number): AspectRatio {
+  if (width > height * 1.1) return "16:9";
+  if (height > width * 1.1) return "9:16";
+  return "1:1";
 }

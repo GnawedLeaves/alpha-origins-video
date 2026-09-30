@@ -21,6 +21,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     .eq("project_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: captions } = await supabase
+    .from("captions")
+    .select("*")
+    .eq("project_id", id)
+    .order("created_at", { ascending: false });
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("brand_voice")
@@ -28,15 +34,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     .single();
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen">
       <Navbar email={user.email} />
-      <div className="mx-auto max-w-6xl px-4 pt-6">
-        <h1 className="text-xl font-semibold text-foreground">{project.name}</h1>
+      <div className="mx-auto max-w-6xl px-4 pt-10">
+        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Project</p>
+        <h1 className="mt-2 font-display text-heading-sm font-extrabold text-primary break-words">
+          {project.name}
+        </h1>
       </div>
       <ProjectWorkspace
         project={project}
         userId={user.id}
         initialGenerations={generations ?? []}
+        initialCaptions={captions ?? []}
         brandVoice={
           profile?.brand_voice ?? {
             tone: "warm, trustworthy, a little playful",

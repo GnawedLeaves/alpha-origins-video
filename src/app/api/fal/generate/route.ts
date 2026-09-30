@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { submitGenerationJob } from "@/lib/fal/client";
-import { getFalModel } from "@/lib/fal/models";
+import { describeFalError, submitGenerationJob } from "@/lib/fal/client";
+import { getFalModel, maxImagesFor } from "@/lib/fal/models";
+import { signGenerationId } from "@/lib/fal/webhook-token";
 
 const bodySchema = z.object({
   projectId: z.string().uuid(),
   prompt: z.string().min(3).max(2000),
   modelId: z.string(),
   durationSeconds: z.number().int().positive(),
+  referenceImageUrls: z.array(z.string().url()).max(7).optional(),
+  // Older clients sent a single photo.
   referenceImageUrl: z.string().url().optional(),
+  aspectRatio: z.enum(["16:9", "9:16", "1:1"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -25,7 +29,10 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { projectId, prompt, modelId, durationSeconds, referenceImageUrl } = parsed.data;
+  const { projectId, prompt, modelId, durationSeconds, aspectRatio } = parsed.data;
+  const referenceImageUrls =
+    parsed.data.referenceImageUrls ??
+    (parsed.data.referenceImageUrl ? [parsed.data.referenceImageUrl] : []);
 
   let model;
   try {
@@ -36,6 +43,21 @@ export async function POST(request: NextRequest) {
   if (!model.durations.includes(durationSeconds)) {
     return NextResponse.json({ error: "Unsupported duration for this model" }, { status: 400 });
   }
+  if (aspectRatio && !model.aspectRatios?.includes(aspectRatio)) {
+    return NextResponse.json(
+      { error: `${model.label} doesn't support ${aspectRatio}` },
+      { status: 400 }
+    );
+  }
+  if (model.requiresImage && referenceImageUrls.length === 0) {
+    return NextResponse.json({ error: `${model.label} needs a photo` }, { status: 400 });
+  }
+  if (referenceImageUrls.length > maxImagesFor(model)) {
+    return NextResponse.json(
+      { error: `${model.label} takes at most ${maxImagesFor(model)} photo(s)` },
+      { status: 400 }
+    );
+  }
 
   const { data: generation, error: insertError } = await supabase
     .from("generations")
@@ -45,7 +67,8 @@ export async function POST(request: NextRequest) {
       prompt,
       model: modelId,
       duration_seconds: durationSeconds,
-      reference_image_url: referenceImageUrl ?? null,
+      // Only the first photo is stored; it's used to pick the endpoint when polling status.
+      reference_image_url: referenceImageUrls[0] ?? null,
       status: "queued",
     })
     .select()
@@ -55,18 +78,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertError?.message ?? "Insert failed" }, { status: 500 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  const webhookUrl =
-    siteUrl && !siteUrl.includes("localhost")
-      ? `${siteUrl}/api/fal/webhook?generationId=${generation.id}`
-      : undefined;
-
   try {
+    // fal.ai can only call back a public URL; on a local machine the client polls instead.
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const webhookUrl =
+      siteUrl && !isLocalUrl(siteUrl)
+        ? `${siteUrl}/api/fal/webhook?generationId=${generation.id}&token=${signGenerationId(generation.id)}`
+        : undefined;
+
     const requestId = await submitGenerationJob({
       modelId,
       prompt,
       durationSeconds,
-      referenceImageUrl,
+      referenceImageUrls,
+      aspectRatio,
       webhookUrl,
     });
 
@@ -77,10 +102,28 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ generationId: generation.id, falRequestId: requestId });
   } catch (err) {
+    console.error("fal.ai submit failed:", err);
+    const message = describeFalError(err);
     await supabase
       .from("generations")
-      .update({ status: "failed", error: (err as Error).message })
+      .update({ status: "failed", error: message })
       .eq("id", generation.id);
-    return NextResponse.json({ error: "Failed to submit job to fal.ai" }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}
+
+function isLocalUrl(url: string) {
+  try {
+    const { hostname } = new URL(url);
+    return (
+      hostname === "localhost" ||
+      hostname.endsWith(".local") ||
+      /^127\./.test(hostname) ||
+      /^10\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+    );
+  } catch {
+    return true;
   }
 }
