@@ -5,8 +5,8 @@ import type { AspectRatio } from "@/lib/types/domain";
 const PLACEHOLDER_ASPECT: Record<AspectRatio, string> = {
   "16:9": "aspect-video w-full",
   // Size tall frames from the height so they keep their shape inside a wide column.
-  "9:16": "aspect-[9/16] h-[60vh] max-w-full",
-  "1:1": "aspect-square h-[60vh] max-w-full",
+  "9:16": "aspect-[9/16] h-[min(60vh,520px)] max-w-full",
+  "1:1": "aspect-square h-[min(60vh,520px)] max-w-full",
 };
 
 export function VideoPreviewPlayer({

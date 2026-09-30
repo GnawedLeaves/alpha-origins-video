@@ -129,11 +129,14 @@ export function Timeline({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Timeline ({clips.length} clips)</h3>
+        <h3 className="text-base font-semibold text-foreground">Timeline ({clips.length} clips)</h3>
         {clips.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Add completed generations to the timeline from the Generate tab.
-          </p>
+          <div className="mt-4 rounded-xl bg-sticky-note-blush p-6 text-forest-ink">
+            <p className="font-semibold">Your timeline is empty</p>
+            <p className="mt-1 text-sm">
+              Add completed generations from the Generate tab, then trim and reorder them here.
+            </p>
+          </div>
         ) : (
           <div className="mt-3 space-y-3">
             {clips.map((clip, i) => (
@@ -153,7 +156,7 @@ export function Timeline({
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-foreground">Preview / Export</h3>
+        <h3 className="text-base font-semibold text-foreground">Preview / Export</h3>
         <div className="mt-3">
           <VideoPreviewPlayer
             src={previewUrl}
@@ -162,7 +165,7 @@ export function Timeline({
           />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-end gap-4">
+        <div className="mt-4 flex flex-wrap items-start gap-4">
           <div className="space-y-1.5">
             <Label>Format</Label>
             <Select

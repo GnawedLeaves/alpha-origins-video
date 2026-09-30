@@ -34,10 +34,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     .single();
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen">
       <Navbar email={user.email} />
-      <div className="mx-auto max-w-6xl px-4 pt-6">
-        <h1 className="text-xl font-semibold text-foreground">{project.name}</h1>
+      <div className="mx-auto max-w-6xl px-4 pt-10">
+        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Project</p>
+        <h1 className="mt-2 font-display text-heading-sm font-extrabold break-words">
+          {project.name}
+        </h1>
       </div>
       <ProjectWorkspace
         project={project}

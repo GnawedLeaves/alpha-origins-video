@@ -2,14 +2,75 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Brand: "creative sketchbook on cream paper".
+ * Forest Ink carries text and primary actions, Highlighter Yellow is a marker wash for emphasis
+ * (never a button fill), and the sticky-note pastels are one-off card/button accents.
+ *
+ * The raw brand colors below are fixed in both themes: sticky-note surfaces stay "paper" in dark
+ * mode, so text on them should stay text-forest-ink. For page text and surfaces use the semantic
+ * tokens further down (bg-background, text-foreground, bg-primary, ...), which flip for dark mode.
+ *
+ * The style guide's --spacing-N tokens are intentionally not added: in Tailwind v4 they would
+ * redefine every `p-8`, `mt-16`, `gap-24`... utility (e.g. mt-16 would shrink from 64px to 16px).
+ * Tailwind's default 4px scale already covers the 8px rhythm (2 = 8px, 4 = 16px, 6 = 24px...).
+ */
+@theme {
+  --color-forest-ink: #1a3300;
+  --color-highlighter-yellow: #ffe95c;
+  --color-cream-paper: #fcfaf5;
+  --color-pencil-gray: #b6b6b6;
+  --color-whisper-gray: #f1f1f1;
+  --color-sticky-note-teal: #a8e5e5;
+  --color-sticky-note-mint: #d5f5c2;
+  --color-sticky-note-blush: #f6d0ff;
+  --color-terracotta: #cb5521;
+
+  /* Display type (Bricolage Grotesque 800): headlines of 40px and up only. */
+  --text-heading-sm: 40px;
+  --text-heading-sm--line-height: 1.1;
+  --text-heading-sm--letter-spacing: 0.04em;
+  --text-heading: 55px;
+  --text-heading--line-height: 1;
+  --text-heading--letter-spacing: 0.04em;
+  --text-heading-lg: 66px;
+  --text-heading-lg--line-height: 1;
+  --text-heading-lg--letter-spacing: 0.05em;
+  --text-display: 90px;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: 0.05em;
+
+  /* Functional type (Inter). */
+  --text-micro: 11px;
+  --text-micro--line-height: 1.3;
+  --text-caption: 14px;
+  --text-caption--line-height: 1.5;
+  --text-body-sm: 16px;
+  --text-body-sm--line-height: 1.5;
+  --text-body: 18px;
+  --text-body--line-height: 1.5;
+  --text-body-lg: 20px;
+  --text-body-lg--line-height: 1.38;
+  --text-subheading: 28px;
+  --text-subheading--line-height: 1.25;
+
+  --shadow-subtle: rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+  --shadow-subtle-2: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
+  /* Soft yellow glow that bleeds below the floating nav. */
+  /* Only the tightest layer of the style guide's glow: its larger layers (132-527px offsets) show
+     up as visible rings across a full page rather than a soft glow. */
+  --shadow-glow: rgba(255, 235, 90, 0.18) 0px 24px 64px 0px;
+}
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-roboto-mono);
+  --font-heading: var(--font-inter);
+  --font-display: var(--font-bricolage);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,82 +100,94 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  /* 6px buttons/inputs, 12px cards, 16px nav. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 9999px;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.666 0.179 58.318);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.968 0.031 70.08);
-  --accent-foreground: oklch(0.4 0.13 55);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.666 0.179 58.318);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 6px;
+
+  --background: #fcfaf5; /* cream paper */
+  --foreground: #1a3300; /* forest ink */
+  --card: #fcfaf5;
+  --card-foreground: #1a3300;
+  --popover: #fcfaf5;
+  --popover-foreground: #1a3300;
+  --primary: #1a3300;
+  --primary-foreground: #fcfaf5;
+  --secondary: #f3efe4; /* a shade darker than the paper */
+  --secondary-foreground: #1a3300;
+  --muted: #f3efe4;
+  /* The guide's whisper/pencil grays are too faint to read on cream, so muted text is
+     forest ink at reduced strength instead. */
+  --muted-foreground: rgb(26 51 0 / 0.62);
+  --accent: #d5f5c2; /* sticky-note mint: hover/selected states */
+  --accent-foreground: #1a3300;
+  --destructive: #b3441a; /* terracotta, darkened for legible text */
+  --border: #d9d6cc;
+  --input: #b6b6b6; /* pencil gray */
+  --ring: #1a3300;
+  --highlight: #ffe95c;
+  --highlight-foreground: #1a3300;
+  --chart-1: #1a3300;
+  --chart-2: #cb5521;
+  --chart-3: #a8e5e5;
+  --chart-4: #f6d0ff;
+  --chart-5: #ffe95c;
+  --sidebar: #fcfaf5;
+  --sidebar-foreground: #1a3300;
+  --sidebar-primary: #1a3300;
+  --sidebar-primary-foreground: #fcfaf5;
+  --sidebar-accent: #d5f5c2;
+  --sidebar-accent-foreground: #1a3300;
+  --sidebar-border: #d9d6cc;
+  --sidebar-ring: #1a3300;
 }
 
+/* Dark: the same sketchbook at night. Deep forest paper, cream ink; primary actions invert to a
+   cream fill with forest text. Yellow and the pastels keep their daytime values. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.769 0.188 70.08);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.279 0.077 45.64);
-  --accent-foreground: oklch(0.85 0.08 66);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.769 0.188 70.08);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #111a09;
+  --foreground: #f4f1e8;
+  --card: #18230f;
+  --card-foreground: #f4f1e8;
+  --popover: #1c2812;
+  --popover-foreground: #f4f1e8;
+  --primary: #f4f1e8;
+  --primary-foreground: #1a3300;
+  --secondary: #223018;
+  --secondary-foreground: #f4f1e8;
+  --muted: #223018;
+  --muted-foreground: rgb(244 241 232 / 0.62);
+  --accent: #2c4020;
+  --accent-foreground: #d5f5c2;
+  --destructive: #e8845a;
+  --border: rgb(244 241 232 / 0.14);
+  --input: rgb(244 241 232 / 0.22);
+  --ring: #d5f5c2;
+  --highlight: #ffe95c;
+  --highlight-foreground: #1a3300;
+  --chart-1: #d5f5c2;
+  --chart-2: #e8845a;
+  --chart-3: #a8e5e5;
+  --chart-4: #f6d0ff;
+  --chart-5: #ffe95c;
+  --sidebar: #18230f;
+  --sidebar-foreground: #f4f1e8;
+  --sidebar-primary: #f4f1e8;
+  --sidebar-primary-foreground: #1a3300;
+  --sidebar-accent: #2c4020;
+  --sidebar-accent-foreground: #d5f5c2;
+  --sidebar-border: rgb(244 241 232 / 0.14);
+  --sidebar-ring: #d5f5c2;
 }
 
 @layer base {
@@ -126,5 +199,18 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
   }
+  html.dark {
+    color-scheme: dark;
+  }
+}
+
+/* Marker-pen wash behind a word in a display headline. */
+@utility highlight-marker {
+  background-color: var(--color-highlighter-yellow);
+  color: var(--color-forest-ink);
+  padding-inline: 0.12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }

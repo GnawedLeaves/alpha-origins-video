@@ -67,11 +67,11 @@ export function ProjectWorkspace({
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
-      <div className="border-b border-border bg-card">
-        <div className="mx-auto max-w-6xl px-4">
-          <TabsList variant="line" className="h-auto gap-4 bg-transparent p-0">
+      <div className="mx-auto mt-6 w-full max-w-6xl px-4">
+        <div className="border-b border-border">
+          <TabsList variant="line" className="h-auto gap-6 bg-transparent p-0">
             {TABS.map((t) => (
-              <TabsTrigger key={t} value={t} className="px-1 py-3 text-sm">
+              <TabsTrigger key={t} value={t} className="px-1 py-3 text-body-sm">
                 {t}
               </TabsTrigger>
             ))}
@@ -79,7 +79,7 @@ export function ProjectWorkspace({
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto w-full max-w-6xl px-4 py-8">
         <TabsContent value="Generate">
           <PromptComposer projectId={project.id} onSubmitted={addOptimistic} />
           <GenerationList

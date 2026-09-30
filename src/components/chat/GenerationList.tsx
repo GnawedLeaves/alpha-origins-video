@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 const STATUS_ICON: Record<Generation["status"], React.ReactNode> = {
   queued: <Loader2 size={16} className="animate-spin text-muted-foreground" />,
   processing: <Loader2 size={16} className="animate-spin text-primary" />,
-  completed: <CheckCircle2 size={16} className="text-green-600" />,
+  completed: <CheckCircle2 size={16} className="text-primary" />,
   failed: <XCircle size={16} className="text-destructive" />,
 };
 
@@ -23,7 +23,7 @@ export function GenerationList({
 }) {
   if (generations.length === 0) {
     return (
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-8 text-center text-body-sm text-muted-foreground">
         No generations yet — describe an ad above and hit Generate.
       </p>
     );
@@ -34,7 +34,7 @@ export function GenerationList({
       {generations.map((gen) => (
         <li
           key={gen.id}
-          className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-sm"
+          className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
         >
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
             {gen.status === "completed" && gen.video_url ? (
@@ -47,7 +47,7 @@ export function GenerationList({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-foreground">{gen.prompt}</p>
             <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <span>
+              <span className="font-mono text-micro">
                 {gen.model} · {gen.duration_seconds}s
               </span>
               <Badge variant={gen.status === "failed" ? "destructive" : "secondary"}>

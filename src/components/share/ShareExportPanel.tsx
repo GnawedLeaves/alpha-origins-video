@@ -50,9 +50,12 @@ export function ShareExportPanel({
 
   if (!activeExport) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Export a video from the Editor tab first, then come back here to download or share it.
-      </p>
+      <div className="max-w-md rounded-xl bg-sticky-note-teal p-6 text-forest-ink">
+        <p className="font-semibold">Nothing to share yet</p>
+        <p className="mt-1 text-sm">
+          Export a video from the Editor tab first, then come back here to download or share it.
+        </p>
+      </div>
     );
   }
 
