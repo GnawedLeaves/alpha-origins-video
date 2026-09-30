@@ -96,7 +96,7 @@ export function PhotoAlbum({
     <div className="rounded-xl border border-border bg-secondary/60 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-lg font-semibold">My photos</p>
+          <p className="text-lg font-medium">My photos</p>
           <p className="text-muted-foreground">
             Tap the photos to use (up to {maxSelected}), tap again to unpick. Photos you upload are
             saved here for next time.
@@ -148,14 +148,14 @@ export function PhotoAlbum({
                 title={full ? `You can use up to ${maxSelected} photos` : undefined}
                 className={cn(
                   "block aspect-square w-full overflow-hidden rounded-lg bg-muted ring-offset-2 ring-offset-background transition disabled:opacity-50",
-                  selected ? "ring-4 ring-primary" : "ring-1 ring-border hover:ring-2 hover:ring-foreground/40"
+                  selected ? "ring-4 ring-selected" : "ring-1 ring-border hover:ring-2 hover:ring-foreground/40"
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
               </button>
               {selected && (
-                <span className="pointer-events-none absolute top-2 left-2 flex size-8 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
+                <span className="pointer-events-none absolute top-2 left-2 flex size-8 items-center justify-center rounded-full bg-selected text-base font-medium text-selected-foreground">
                   {maxSelected > 1 ? order + 1 : <Check className="size-5" />}
                 </span>
               )}

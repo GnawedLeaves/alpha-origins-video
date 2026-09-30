@@ -36,7 +36,7 @@ export function ClipViewer({
         // Clicking the dimmed backdrop (the dialog element itself) closes it.
         if (e.target === e.currentTarget) onClose();
       }}
-      className="m-auto w-[min(56rem,calc(100vw-2rem))] rounded-2xl bg-background p-0 text-foreground shadow-subtle-2 backdrop:bg-black/70"
+      className="m-auto w-[min(56rem,calc(100vw-2rem))] rounded-2xl bg-background p-0 text-foreground shadow-subtle backdrop:bg-black/70"
     >
       <div className="p-4 sm:p-5">
         <div className="flex items-start gap-3">

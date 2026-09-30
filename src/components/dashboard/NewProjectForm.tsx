@@ -42,7 +42,11 @@ export function NewProjectForm() {
       return;
     }
 
-    startNavigation(() => router.push(`/projects/${data.id}`));
+    startNavigation(() => {
+      router.push(`/projects/${data.id}`);
+      // Refresh so the sidebar's "Recent projects" picks up the new one.
+      router.refresh();
+    });
   }
 
   if (!open) {

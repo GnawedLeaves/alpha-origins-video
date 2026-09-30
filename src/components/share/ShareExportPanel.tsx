@@ -60,8 +60,8 @@ export function ShareExportPanel({
 
   if (!activeExport) {
     return (
-      <div className="max-w-md rounded-xl bg-sticky-note-teal p-6 text-forest-ink">
-        <p className="font-semibold">Nothing to share yet</p>
+      <div className="max-w-md rounded-2xl border border-border bg-card p-6">
+        <p className="font-medium">Nothing to share yet</p>
         <p className="mt-1 text-sm">
           Export a video from the Editor tab first, then come back here to download or share it.
         </p>

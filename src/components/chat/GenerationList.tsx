@@ -78,7 +78,7 @@ export function GenerationList({
 
   if (generations.length === 0) {
     return (
-      <p className="mt-8 text-center text-body-sm text-muted-foreground">
+      <p className="mt-8 text-center text-base text-muted-foreground">
         Your clips will appear here. Describe a video above and press &ldquo;Make video&rdquo;.
       </p>
     );
@@ -124,7 +124,7 @@ export function GenerationList({
                     className="pointer-events-none h-full w-full object-cover"
                   />
                   <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/40">
-                    <span className="flex size-9 items-center justify-center rounded-full bg-white/90 text-forest-ink">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-parchment/90 text-ink">
                       <Play className="size-5 translate-x-px fill-current" />
                     </span>
                   </span>

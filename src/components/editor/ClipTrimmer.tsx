@@ -109,7 +109,7 @@ export function ClipTrimmer({
       <CardContent className="space-y-3">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="font-semibold">Clip {index + 1}</p>
+            <p className="font-medium">Clip {index + 1}</p>
             <ExpandableText text={clip.label} className="text-sm text-muted-foreground" />
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -175,7 +175,7 @@ export function ClipTrimmer({
           >
             <Scissors /> Cut here
           </Button>
-          <span className="ml-auto font-mono text-sm text-muted-foreground tabular-nums">
+          <span className="ml-auto text-sm text-muted-foreground tabular-nums">
             {current.toFixed(1)}s
           </span>
         </div>

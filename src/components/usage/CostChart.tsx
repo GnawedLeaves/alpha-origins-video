@@ -63,9 +63,9 @@ export function CostChart({ points }: { points: UsagePoint[] }) {
   const fmtDay = (d: Date) => d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 
   return (
-    <figure className="rounded-xl bg-card p-4 ring-1 ring-foreground/15 sm:p-5">
+    <figure className="rounded-2xl border border-border bg-card p-4 sm:p-5">
       <figcaption>
-        <p className="font-semibold">Estimated fal.ai cost per day</p>
+        <p className="font-medium">Estimated fal.ai cost per day</p>
         <p className="text-sm text-muted-foreground">Last 30 days · finished videos only</p>
       </figcaption>
 
@@ -131,7 +131,7 @@ export function CostChart({ points }: { points: UsagePoint[] }) {
                       {active === i && d.videos > 0 && (
                         <div
                           role="tooltip"
-                          className={`pointer-events-none absolute bottom-full z-10 mb-2 w-max max-w-48 rounded-lg bg-popover px-3 py-2 text-sm text-popover-foreground shadow-subtle-2 ring-1 ring-border ${i > DAYS - 6 ? "right-0" : i < 5 ? "left-0" : "left-1/2 -translate-x-1/2"}`}
+                          className={`pointer-events-none absolute bottom-full z-10 mb-2 w-max max-w-48 rounded-lg bg-popover px-3 py-2 text-sm text-popover-foreground shadow-subtle ring-1 ring-border ${i > DAYS - 6 ? "right-0" : i < 5 ? "left-0" : "left-1/2 -translate-x-1/2"}`}
                         >
                           <p className="font-medium">{fmtDay(d.date)}</p>
                           <p className="tabular-nums">{money(d.cost)}</p>

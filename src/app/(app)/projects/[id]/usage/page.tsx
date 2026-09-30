@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
 import { LinkButton } from "@/components/layout/LinkButton";
 import { Badge } from "@/components/ui/badge";
 import { ExpandableText } from "@/components/common/ExpandableText";
@@ -74,23 +73,21 @@ export default async function UsagePage({ params }: { params: Promise<{ id: stri
   const anyLivePrice = Object.values(prices).some((p) => p?.source === "fal");
 
   return (
-    <div className="min-h-screen">
-      <Navbar email={user.email} />
-      <main className="mx-auto max-w-6xl px-4 py-10">
+    <>
         <LinkButton href={`/projects/${project.id}`} icon={<ArrowLeft />} variant="ghost" className="-ml-2 h-10 px-2 text-base">
           Back to {project.name}
         </LinkButton>
-        <h1 className="mt-4 font-display text-heading-sm font-extrabold text-primary">Usage &amp; cost</h1>
+        <h1 className="mt-3 text-3xl font-medium tracking-tight">Usage &amp; cost</h1>
         <p className="mt-2 text-muted-foreground">
           Every video made in <span className="font-medium text-foreground">{project.name}</span>, and
           roughly what it cost on fal.ai.
         </p>
 
         {/* KPI row: the estimated cost leads */}
-        <section aria-label="Totals" className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <div className="col-span-2 rounded-xl bg-card p-5 ring-1 ring-foreground/15 lg:col-span-1 lg:row-span-1">
+        <section aria-label="Totals" className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div className="col-span-2 rounded-2xl border border-border bg-card p-4 md:col-span-1">
             <p className="text-sm text-muted-foreground">Estimated fal.ai cost</p>
-            <p className="mt-1 text-5xl font-semibold tracking-tight">{money(totalCost)}</p>
+            <p className="mt-1 text-4xl font-medium tracking-tight">{money(totalCost)}</p>
             {unpriced > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">
                 + {unpriced} video{unpriced === 1 ? "" : "s"} with no price set
@@ -109,10 +106,10 @@ export default async function UsagePage({ params }: { params: Promise<{ id: stri
 
         {byModel.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold">By video style</h2>
-            <div className="mt-3 overflow-x-auto rounded-xl ring-1 ring-foreground/15">
+            <h2 className="text-lg font-medium">By video style</h2>
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-border">
               <table className="w-full min-w-[36rem] text-left">
-                <thead className="bg-muted/60 text-sm text-muted-foreground">
+                <thead className="text-sm text-muted-foreground">
                   <tr>
                     <th className="px-4 py-2 font-medium">Style</th>
                     <th className="px-4 py-2 font-medium">Price</th>
@@ -145,15 +142,15 @@ export default async function UsagePage({ params }: { params: Promise<{ id: stri
         )}
 
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">History</h2>
+          <h2 className="text-lg font-medium">History</h2>
           {rows.length === 0 ? (
-            <p className="mt-3 rounded-xl bg-muted p-6 text-muted-foreground">
+            <p className="mt-3 rounded-2xl border border-border bg-card p-6 text-muted-foreground">
               No videos yet. Make one in step 1 of the project.
             </p>
           ) : (
-            <div className="mt-3 overflow-x-auto rounded-xl ring-1 ring-foreground/15">
-              <table className="w-full min-w-[48rem] text-left">
-                <thead className="bg-muted/60 text-sm text-muted-foreground">
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-border">
+              <table className="w-full min-w-[44rem] text-left">
+                <thead className="text-sm text-muted-foreground">
                   <tr>
                     <th className="px-4 py-2 font-medium">When</th>
                     <th className="px-4 py-2 font-medium">Description</th>
@@ -195,7 +192,7 @@ export default async function UsagePage({ params }: { params: Promise<{ id: stri
           )}
         </section>
 
-        <aside className="mt-8 flex gap-3 rounded-xl bg-secondary p-4 text-sm text-muted-foreground">
+        <aside className="mt-8 flex gap-3 rounded-2xl border border-border p-4 text-sm text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0" />
           <p>
             These are estimates: finished videos × each style&apos;s price
@@ -205,16 +202,15 @@ export default async function UsagePage({ params }: { params: Promise<{ id: stri
             Dashboard → Billing.
           </p>
         </aside>
-      </main>
-    </div>
+    </>
   );
 }
 
 function Stat({ label, value, note }: { label: string; value: number; note?: string }) {
   return (
-    <div className="rounded-xl bg-card p-5 ring-1 ring-foreground/15">
+    <div className="rounded-2xl border border-border bg-card p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold tabular-nums">{value.toLocaleString()}</p>
+      <p className="mt-1 text-2xl font-medium tabular-nums">{value.toLocaleString()}</p>
       {note && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}
     </div>
   );

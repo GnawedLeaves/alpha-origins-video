@@ -115,19 +115,24 @@ export function ProjectWorkspace({
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
-      <div className="mx-auto mt-6 w-full max-w-6xl px-4">
-        <div className="border-b border-border">
-          <TabsList variant="line" className="h-auto flex-wrap justify-start gap-x-5 gap-y-1 bg-transparent p-0 sm:gap-x-6">
-            {TABS.map((t) => (
-              <TabsTrigger key={t} value={t} className="px-1 py-3 text-base">
-                {TAB_LABELS[t]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </div>
+      <TabsList
+        variant="line"
+        className="mt-5 h-auto flex-wrap group-data-horizontal/tabs:h-auto justify-start gap-2 bg-transparent p-0"
+      >
+        {TABS.map((t) => (
+          // Pill chips: outlined when idle, teal fill when selected (the `!` beats the line
+          // variant's own "transparent when active" rule).
+          <TabsTrigger
+            key={t}
+            value={t}
+            className="h-auto flex-none rounded-full border border-input px-4 py-2 text-base text-muted-foreground after:hidden hover:bg-accent hover:text-foreground data-active:border-selected! data-active:bg-selected! data-active:text-selected-foreground!"
+          >
+            {TAB_LABELS[t]}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
-      <div className="mx-auto w-full max-w-6xl px-4 py-8">
+      <div className="w-full py-6">
         <TabsContent value="Generate">
           <PromptComposer projectId={project.id} onSubmitted={addOptimistic} />
           <GenerationList

@@ -94,6 +94,17 @@ npm run check-setup
   with no credit (new fal.ai accounts need credit added at fal.ai/dashboard/billing), or a photo fal
   couldn't use. The full error is also printed in the `npm run dev` terminal.
 
+## Look and feel
+
+Calm and flat, so the tools come first:
+
+- **Colours:** warm parchment background (`#faf8f5`), paper-white cards, warm grey borders, ink text (`#27251e`) and graphite secondary text. One accent, deep teal (`#016a71`), is used only for what's selected or active (the current step, the chosen shape, the open project) and for the main action ("Make video"). Dark mode keeps the same warmth.
+- **Type:** Inter only, in two weights (regular and medium; nothing bold). Text is sized up (18px base) for easy reading.
+- **Shapes:** 16px rounded cards, 12px inputs and buttons, pill-shaped chips, a hairline border and at most a 1px shadow.
+- **Layout:** a sidebar with Projects and recent projects (a top bar on phones), and content in one centred column up to 900px wide.
+
+Colour tokens live in `src/app/globals.css`; use `bg-selected` / `bg-cta` rather than new colours.
+
 ## Usage & cost page
 
 Each project has a **Usage & cost** page (`/projects/[id]/usage`, button in the project header):
