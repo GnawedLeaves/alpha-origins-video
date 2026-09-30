@@ -43,7 +43,9 @@
   --text-display--line-height: 1;
   --text-display--letter-spacing: 0.05em;
 
-  /* Functional type (Inter). */
+  /* Functional type (Inter). Use these on plain elements only: the `cn` class merger doesn't know
+     them and treats e.g. `text-body` as a text color, dropping a component's own text color. On
+     Button/Tabs/Input use text-base / text-lg instead. */
   --text-micro: 11px;
   --text-micro--line-height: 1.3;
   --text-caption: 14px;
@@ -203,6 +205,8 @@
   html {
     @apply font-sans;
     color-scheme: light;
+    /* 18px base instead of 16px: everything sized in rem (text, buttons, spacing) scales up. */
+    font-size: 112.5%;
   }
   html.dark {
     color-scheme: dark;

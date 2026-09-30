@@ -93,14 +93,14 @@ export default function LoginPage() {
 
         <section className="relative">
           <Badge variant="highlight" className="h-6 px-2.5 text-xs">
-            <PawPrint /> AI ad studio for dog food brands
+            <PawPrint /> Dog video ads for Alpha Origins
           </Badge>
           <h1 className="mt-6 font-display text-heading-sm font-extrabold text-primary sm:text-heading lg:text-heading-lg">
-            Scroll-stopping <span className="highlight-marker">ads</span>, fetched in minutes.
+            Make a dog <span className="highlight-marker">video ad</span> in minutes.
           </h1>
           <p className="mt-6 max-w-xl text-body text-foreground/85">
-            Generate short video ads, trim them into one cut, and get captions written for Reels,
-            TikTok, Shorts and Facebook — all in your brand&apos;s voice.
+            Describe what you&apos;d like to see. Keemu makes the video, then writes the captions
+            for Instagram, Facebook, TikTok and YouTube.
           </p>
         </section>
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
               {mode === "login" ? "Welcome back" : "Create your studio"}
             </CardTitle>
             <CardDescription>
-              {mode === "login" ? "Sign in to your ad studio." : "Set up your account in seconds."}
+              {mode === "login" ? "Sign in to make videos." : "Set up your account in seconds."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -123,7 +123,7 @@ export default function LoginPage() {
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="e.g. Marcel's Dog Kitchen"
+                    placeholder="Alpha Origins"
                   />
                 </div>
               )}

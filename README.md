@@ -1,7 +1,13 @@
-# Alpha Origins
+# Keemu
 
-AI video ad studio for a dog food brand: generate short video ads with Fal.ai, trim/splice them
-in-browser, generate platform-tailored captions, and export/share the result.
+*(temporary name)* A simple video ad maker for **Alpha Origins**, a dog food company. It's built to
+be used by someone who isn't technical: describe the video in plain words, press **Improve my
+description** to have AI turn that into a detailed prompt, press **Enter** (or **Make video**), then
+put clips together, get captions and share.
+
+The screens are deliberately simple: numbered steps, large text and buttons, plain language, and
+the AI model is picked automatically (a photo switches to the photo model). Technical settings are
+under "More settings".
 
 ## Stack
 
@@ -80,17 +86,21 @@ npm run check-setup
 
 ## How it fits together
 
-- **Generate tab** (`PromptComposer` + `GenerationList`): submits a prompt (+ optional reference
+- **Improve my description** (`PromptComposer` → `/api/prompts/refine` → `src/lib/ai/refine-prompt.ts`):
+  Gemini rewrites a short idea into a detailed video prompt (one continuous shot sized to the clip
+  length, camera/lighting/mood, no on-screen text, motion-only when a photo is attached). Inputs are
+  locked while it runs; the cursor returns to the box so Enter sends it. Undo restores the original.
+- **1. Make clips** (`PromptComposer` + `GenerationList`): submits a prompt (+ optional reference
   image) to `/api/fal/generate`, which inserts a `generations` row and enqueues a fal.ai job.
   Status updates arrive via Supabase Realtime (webhook path) or a 4s poll fallback
   (`useGenerations`).
-- **Editor tab** (`Timeline`): add completed generations to an in-memory timeline, trim/split/
+- **2. Put together** (`Timeline`): add completed generations to an in-memory timeline, trim/split/
   reorder clips, then "Trim, merge & export" runs `@ffmpeg/ffmpeg` in the browser to produce a
   single MP4, uploads it to the `exports` bucket, and saves the metadata via `/api/exports`.
-- **Captions tab**: generates platform-specific captions (Instagram Reels, Facebook Ads, TikTok,
+- **3. Captions**: generates platform-specific captions (Instagram Reels, Facebook Ads, TikTok,
   YouTube Shorts) via `/api/captions/generate`, which calls Gemini with your brand voice
   (editable in the same tab, persisted to `profiles.brand_voice`).
-- **Share tab**: download the MP4, copy a caption to the clipboard, or use the native
+- **4. Share**: download the MP4, copy a caption to the clipboard, or use the native
   `navigator.share()` sheet on supported devices (mobile Safari/Chrome). There's no direct
   Instagram/Facebook posting in v1 — that requires a Meta Developer App, Business verification,
   and App Review for content-publishing permissions, which takes external approval you'd need to
@@ -101,7 +111,7 @@ npm run check-setup
 - **Generate:** only models with `aspectRatios` in `src/lib/fal/models.ts` take an aspect ratio
   (currently Kling 2.0 text-to-video: 9:16, 16:9, 1:1). Image-to-video models follow the uploaded
   image's shape, so upload a vertical photo for vertical output.
-- **Export:** the Editor tab renders to 9:16 (720×1280, default), 16:9 (1280×720) or 1:1
+- **Export:** step 2 (Put together) renders to 9:16 (720×1280, default), 16:9 (1280×720) or 1:1
   (720×720). "Crop to fill" crops clips that don't match; "Fit with bars" letterboxes them.
 
 ## Adding a Fal.ai model

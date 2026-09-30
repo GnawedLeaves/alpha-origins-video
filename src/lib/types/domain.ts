@@ -9,9 +9,9 @@ export type GenerationStatus = "queued" | "processing" | "completed" | "failed";
 export type AspectRatio = "16:9" | "9:16" | "1:1";
 
 export const ASPECT_RATIO_LABELS: Record<AspectRatio, string> = {
-  "9:16": "Vertical 9:16",
-  "16:9": "Landscape 16:9",
-  "1:1": "Square 1:1",
+  "9:16": "Tall (phones)",
+  "16:9": "Wide",
+  "1:1": "Square",
 };
 
 export type Platform =

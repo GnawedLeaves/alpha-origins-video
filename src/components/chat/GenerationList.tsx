@@ -5,6 +5,13 @@ import type { Generation } from "@/lib/types/domain";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+const STATUS_TEXT: Record<Generation["status"], string> = {
+  queued: "Waiting to start…",
+  processing: "Making your video… (usually 2–5 minutes)",
+  completed: "Ready",
+  failed: "Didn't work — try again",
+};
+
 const STATUS_ICON: Record<Generation["status"], React.ReactNode> = {
   queued: <Loader2 size={16} className="animate-spin text-muted-foreground" />,
   processing: <Loader2 size={16} className="animate-spin text-primary" />,
@@ -24,7 +31,7 @@ export function GenerationList({
   if (generations.length === 0) {
     return (
       <p className="mt-8 text-center text-body-sm text-muted-foreground">
-        No generations yet — describe an ad above and hit Generate.
+        Your clips will appear here. Describe a video above and press &ldquo;Make video&rdquo;.
       </p>
     );
   }
@@ -34,9 +41,9 @@ export function GenerationList({
       {generations.map((gen) => (
         <li
           key={gen.id}
-          className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+          className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 sm:flex-nowrap"
         >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
             {gen.status === "completed" && gen.video_url ? (
               <video src={gen.video_url} className="h-full w-full object-cover" muted />
             ) : (
@@ -45,26 +52,32 @@ export function GenerationList({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-foreground">{gen.prompt}</p>
-            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-mono text-micro">
-                {gen.model} · {gen.duration_seconds}s
-              </span>
-              <Badge variant={gen.status === "failed" ? "destructive" : "secondary"}>
-                {gen.status}
+            <p className="line-clamp-2 text-foreground">{gen.prompt}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Badge
+                variant={gen.status === "failed" ? "destructive" : "secondary"}
+                className="h-auto py-1 text-sm whitespace-normal"
+              >
+                {STATUS_TEXT[gen.status]}
               </Badge>
+              <span>{gen.duration_seconds} seconds</span>
             </div>
-            {gen.error && <p className="mt-0.5 text-xs text-destructive">{gen.error}</p>}
+            {gen.error && (
+              <details className="mt-1 text-sm text-muted-foreground">
+                <summary className="cursor-pointer">What went wrong?</summary>
+                <p className="mt-1 text-destructive">{gen.error}</p>
+              </details>
+            )}
           </div>
 
           {gen.status === "completed" && gen.video_url && (
             <Button
               variant="outline"
-              size="sm"
               onClick={() => onAddToTimeline(gen)}
               disabled={clipSourceIds.has(gen.id)}
+              className="h-11 shrink-0 px-4"
             >
-              <Plus size={12} /> {clipSourceIds.has(gen.id) ? "Added" : "Add to timeline"}
+              <Plus /> {clipSourceIds.has(gen.id) ? "Added" : "Use this clip"}
             </Button>
           )}
         </li>

@@ -1,4 +1,4 @@
--- Row Level Security policies for Alpha Origins
+-- Row Level Security policies for Keemu
 -- Run after schema.sql.
 
 alter table profiles enable row level security;

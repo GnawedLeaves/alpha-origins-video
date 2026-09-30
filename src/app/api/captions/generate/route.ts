@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("brand_voice")
+    .select("brand_voice, business_name")
     .eq("id", user.id)
     .single();
 
@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       platforms: platforms as Platform[],
       videoContext,
       brandVoice: profile.brand_voice,
+      businessName: profile.business_name,
     });
   } catch (err) {
     return NextResponse.json(

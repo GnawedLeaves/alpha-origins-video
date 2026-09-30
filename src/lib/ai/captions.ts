@@ -1,20 +1,7 @@
 import "server-only";
-import { ApiError, GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { requireEnv } from "@/lib/env";
+import { generateJson } from "@/lib/ai/gemini";
 import type { BrandVoice, Platform } from "@/lib/types/domain";
-
-// "gemini-flash-latest" always points at Google's current Flash model, which is on the Gemini API
-// free tier. Override with GEMINI_MODEL in .env.local to pin a specific model.
-const DEFAULT_MODEL = "gemini-flash-latest";
-
-let client: GoogleGenAI | null = null;
-function gemini() {
-  client ??= new GoogleGenAI({
-    apiKey: requireEnv("GEMINI_API_KEY", process.env.GEMINI_API_KEY),
-  });
-  return client;
-}
 
 const PLATFORMS = ["instagram_reels", "facebook_ads", "tiktok", "youtube_shorts"] as const;
 
@@ -27,13 +14,6 @@ const CaptionsSchema = z.object({
     })
   ),
 });
-
-// Gemini accepts a subset of JSON Schema; drop the `$schema` meta key zod adds.
-const CAPTIONS_JSON_SCHEMA = (() => {
-  const schema: Record<string, unknown> = z.toJSONSchema(CaptionsSchema);
-  delete schema.$schema;
-  return schema;
-})();
 
 const PLATFORM_SPEC: Record<Platform, string> = {
   instagram_reels:
@@ -56,16 +36,18 @@ export async function generateCaptions({
   platforms,
   videoContext,
   brandVoice,
+  businessName,
 }: {
   platforms: Platform[];
   videoContext: string;
   brandVoice: BrandVoice;
+  businessName: string;
 }): Promise<CaptionResult[]> {
   const platformInstructions = platforms
     .map((p) => `- ${p}: ${PLATFORM_SPEC[p]}`)
     .join("\n");
 
-  const systemPrompt = `You are a social media copywriter for a dog food brand. Write captions strictly in this brand voice:
+  const systemPrompt = `You are a social media copywriter for ${businessName}, a dog food brand. Write captions strictly in this brand voice:
 - Tone: ${brandVoice.tone}
 - Brand pillars to draw on: ${brandVoice.pillars.join(", ")}
 - Avoid: ${brandVoice.avoid.join(", ")}
@@ -81,40 +63,12 @@ Return one entry in "captions" per requested platform. "content" must NOT includ
 Generate one caption per platform below, following each platform's format exactly:
 ${platformInstructions}`;
 
-  let text: string | undefined;
-  try {
-    const response = await gemini().models.generateContent({
-      model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
-      contents: userPrompt,
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseJsonSchema: CAPTIONS_JSON_SCHEMA,
-      },
-    });
-    text = response.text;
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 429) {
-      throw new Error("Gemini free-tier rate limit reached — wait a minute and try again");
-    }
-    throw err;
-  }
-
-  if (!text) {
-    throw new Error("No response from caption generator");
-  }
-
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error("Could not parse caption generator response");
-  }
-  const parsed = CaptionsSchema.safeParse(json);
-  if (!parsed.success) {
-    throw new Error("Caption generator returned an unexpected format");
-  }
+  const result = await generateJson({
+    schema: CaptionsSchema,
+    system: systemPrompt,
+    user: userPrompt,
+  });
 
   const requested = new Set(platforms);
-  return parsed.data.captions.filter((c) => requested.has(c.platform));
+  return result.captions.filter((c) => requested.has(c.platform));
 }

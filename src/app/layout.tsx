@@ -24,8 +24,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alpha Origins",
-  description: "AI-generated video ads for your dog food brand.",
+  title: "Keemu",
+  description: "Make dog video ads for Alpha Origins in a few clicks.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

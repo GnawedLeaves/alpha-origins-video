@@ -129,12 +129,13 @@ export function Timeline({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div>
-        <h3 className="text-base font-semibold text-foreground">Timeline ({clips.length} clips)</h3>
+        <h3 className="text-base font-semibold text-foreground">Your clips ({clips.length})</h3>
         {clips.length === 0 ? (
           <div className="mt-4 rounded-xl bg-sticky-note-blush p-6 text-forest-ink">
             <p className="font-semibold">Your timeline is empty</p>
             <p className="mt-1 text-sm">
-              Add completed generations from the Generate tab, then trim and reorder them here.
+              In step 1, press &ldquo;Use this clip&rdquo; on a finished video. Then trim and
+              reorder your clips here.
             </p>
           </div>
         ) : (
@@ -156,7 +157,7 @@ export function Timeline({
       </div>
 
       <div>
-        <h3 className="text-base font-semibold text-foreground">Preview / Export</h3>
+        <h3 className="text-base font-semibold text-foreground">Final video</h3>
         <div className="mt-3">
           <VideoPreviewPlayer
             src={previewUrl}
@@ -167,7 +168,7 @@ export function Timeline({
 
         <div className="mt-4 flex flex-wrap items-start gap-4">
           <div className="space-y-1.5">
-            <Label>Format</Label>
+            <Label>Shape</Label>
             <Select
               value={aspectRatio}
               onValueChange={(v) => v && setAspectRatio(v as AspectRatio)}
@@ -187,7 +188,7 @@ export function Timeline({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Framing</Label>
+            <Label>If a clip is a different shape</Label>
             <div className="flex gap-1">
               <Button
                 size="sm"
@@ -195,7 +196,7 @@ export function Timeline({
                 onClick={() => setFit("fill")}
                 aria-pressed={fit === "fill"}
               >
-                Crop to fill
+                Zoom to fill
               </Button>
               <Button
                 size="sm"
@@ -203,7 +204,7 @@ export function Timeline({
                 onClick={() => setFit("fit")}
                 aria-pressed={fit === "fit"}
               >
-                Fit with bars
+                Show whole clip
               </Button>
             </div>
           </div>
@@ -212,7 +213,7 @@ export function Timeline({
           <p className="mt-2 text-xs text-muted-foreground">
             {mismatchedClips} {mismatchedClips === 1 ? "clip doesn't" : "clips don't"} match{" "}
             {aspectRatio} and will be{" "}
-            {fit === "fill" ? "cropped at the edges" : "shown with black bars"}.
+            {fit === "fill" ? "zoomed in to fill the frame" : "shown whole, with black bars"}.
           </p>
         )}
 
@@ -224,10 +225,10 @@ export function Timeline({
           {rendering ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
           {rendering
             ? stage || (ffmpegLoading ? "Loading video engine…" : `Rendering… ${Math.round(progress * 100)}%`)
-            : "Trim, merge & export"}
+            : "Make final video"}
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
-          Rendering runs entirely in your browser. Longer timelines take longer and use more memory.
+          This joins your clips into one video. It can take a minute — keep this page open.
         </p>
         {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       </div>

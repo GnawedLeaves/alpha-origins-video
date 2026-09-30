@@ -21,7 +21,7 @@ export function Navbar({ email }: { email?: string }) {
     <header className="px-4 pt-4">
       {/* Floating pill nav with a soft yellow glow bleeding below it. */}
       <div className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-input bg-background px-3 py-2 shadow-glow dark:border-border dark:shadow-none">
-        <Link href="/dashboard" aria-label="Alpha Origins — your projects">
+        <Link href="/dashboard" aria-label="Keemu — your projects">
           <Logo />
         </Link>
         <div className="flex items-center gap-2">

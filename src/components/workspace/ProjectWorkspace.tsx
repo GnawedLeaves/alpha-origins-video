@@ -17,6 +17,14 @@ import type { BrandVoice, CaptionRecord, ExportRecord, Generation, Project } fro
 const TABS = ["Generate", "Editor", "Captions", "Share"] as const;
 type Tab = (typeof TABS)[number];
 
+// Numbered steps in plain words: the app is used by people who aren't video or tech experts.
+const TAB_LABELS: Record<Tab, string> = {
+  Generate: "1. Make clips",
+  Editor: "2. Put together",
+  Captions: "3. Captions",
+  Share: "4. Share",
+};
+
 export function ProjectWorkspace({
   project,
   userId,
@@ -69,10 +77,10 @@ export function ProjectWorkspace({
     <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
       <div className="mx-auto mt-6 w-full max-w-6xl px-4">
         <div className="border-b border-border">
-          <TabsList variant="line" className="h-auto gap-6 bg-transparent p-0">
+          <TabsList variant="line" className="h-auto flex-wrap justify-start gap-x-5 gap-y-1 bg-transparent p-0 sm:gap-x-6">
             {TABS.map((t) => (
-              <TabsTrigger key={t} value={t} className="px-1 py-3 text-body-sm">
-                {t}
+              <TabsTrigger key={t} value={t} className="px-1 py-3 text-base">
+                {TAB_LABELS[t]}
               </TabsTrigger>
             ))}
           </TabsList>

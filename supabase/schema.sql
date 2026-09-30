@@ -1,4 +1,4 @@
--- Alpha Origins schema
+-- Keemu schema (video ads for Alpha Origins)
 -- Run this in the Supabase SQL editor (or via `supabase db push`) after creating a new project.
 
 create extension if not exists "pgcrypto";
@@ -6,7 +6,7 @@ create extension if not exists "pgcrypto";
 -- One row per authenticated user, created by the handle_new_user trigger below.
 create table if not exists profiles (
   id uuid primary key references auth.users (id) on delete cascade,
-  business_name text not null default 'My Dog Food Brand',
+  business_name text not null default 'Alpha Origins',
   brand_voice jsonb not null default '{
     "tone": "warm, trustworthy, a little playful",
     "pillars": ["real ingredients", "vet-formulated nutrition", "happy, healthy dogs"],
@@ -100,7 +100,7 @@ begin
   insert into public.profiles (id, business_name)
   values (
     new.id,
-    coalesce(nullif(new.raw_user_meta_data ->> 'business_name', ''), 'My Dog Food Brand')
+    coalesce(nullif(new.raw_user_meta_data ->> 'business_name', ''), 'Alpha Origins')
   );
   return new;
 end;
