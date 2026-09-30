@@ -95,7 +95,7 @@ export default function LoginPage() {
           <Badge variant="highlight" className="h-6 px-2.5 text-xs">
             <PawPrint /> AI ad studio for dog food brands
           </Badge>
-          <h1 className="mt-6 font-display text-heading-sm font-extrabold sm:text-heading lg:text-heading-lg">
+          <h1 className="mt-6 font-display text-heading-sm font-extrabold text-primary sm:text-heading lg:text-heading-lg">
             Scroll-stopping <span className="highlight-marker">ads</span>, fetched in minutes.
           </h1>
           <p className="mt-6 max-w-xl text-body text-foreground/85">

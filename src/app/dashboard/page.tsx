@@ -25,7 +25,7 @@ export default async function DashboardPage() {
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               Dashboard
             </p>
-            <h1 className="mt-2 font-display text-heading-sm font-extrabold">
+            <h1 className="mt-2 font-display text-heading-sm font-extrabold text-primary">
               Your <span className="highlight-marker">projects</span>
             </h1>
           </div>
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
           <div className="relative mt-16 flex justify-center">
             <SketchDoodle className="absolute -top-10 left-0 hidden w-72 md:block" />
             {/* Sticky-note empty state. */}
-            <div className="relative max-w-md rounded-2xl bg-sticky-note-mint p-7 text-forest-ink">
+            <div className="relative max-w-md rounded-2xl bg-sticky-note-blush p-7 text-forest-ink">
               <h2 className="text-xl font-semibold">No projects yet</h2>
               <p className="mt-2 text-body-sm">
                 Create one for each campaign — a product launch, a seasonal promo — then generate

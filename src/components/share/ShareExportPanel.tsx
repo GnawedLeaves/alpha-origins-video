@@ -99,7 +99,7 @@ export function ShareExportPanel({
                   </div>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{caption.content}</p>
-                <p className="mt-2 text-xs text-primary">{caption.hashtags.join(" ")}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{caption.hashtags.join(" ")}</p>
               </CardContent>
             </Card>
           ))}

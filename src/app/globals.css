@@ -6,7 +6,8 @@
 
 /*
  * Brand: "creative sketchbook on cream paper".
- * Forest Ink carries text and primary actions, Highlighter Yellow is a marker wash for emphasis
+ * Cream paper is the canvas and text is a neutral warm ink. Forest Ink is used sparingly, for
+ * primary actions and important text (headlines), Highlighter Yellow is a marker wash for emphasis
  * (never a button fill), and the sticky-note pastels are one-off card/button accents.
  *
  * The raw brand colors below are fixed in both themes: sticky-note surfaces stay "paper" in dark
@@ -115,25 +116,26 @@
 :root {
   --radius: 6px;
 
+  /* Cream paper is the canvas; text is a warm near-black. Forest ink is reserved for actions
+     (primary buttons, selected states, focus rings) and important text (page headlines). */
   --background: #fcfaf5; /* cream paper */
-  --foreground: #1a3300; /* forest ink */
+  --foreground: #2a2823; /* warm ink, deliberately not green */
   --card: #fcfaf5;
-  --card-foreground: #1a3300;
-  --popover: #fcfaf5;
-  --popover-foreground: #1a3300;
-  --primary: #1a3300;
+  --card-foreground: #2a2823;
+  --popover: #fffdf8;
+  --popover-foreground: #2a2823;
+  --primary: #1a3300; /* forest ink: actions + headlines */
   --primary-foreground: #fcfaf5;
   --secondary: #f3efe4; /* a shade darker than the paper */
-  --secondary-foreground: #1a3300;
+  --secondary-foreground: #2a2823;
   --muted: #f3efe4;
-  /* The guide's whisper/pencil grays are too faint to read on cream, so muted text is
-     forest ink at reduced strength instead. */
-  --muted-foreground: rgb(26 51 0 / 0.62);
-  --accent: #d5f5c2; /* sticky-note mint: hover/selected states */
-  --accent-foreground: #1a3300;
+  /* The guide's whisper/pencil grays are too faint to read on cream; this warm gray is legible. */
+  --muted-foreground: #6e685d;
+  --accent: #efe9dc; /* neutral hover/selected wash */
+  --accent-foreground: #2a2823;
   --destructive: #b3441a; /* terracotta, darkened for legible text */
-  --border: #d9d6cc;
-  --input: #b6b6b6; /* pencil gray */
+  --border: #e2ddd1;
+  --input: #c9c4b8;
   --ring: #1a3300;
   --highlight: #ffe95c;
   --highlight-foreground: #1a3300;
@@ -143,35 +145,36 @@
   --chart-4: #f6d0ff;
   --chart-5: #ffe95c;
   --sidebar: #fcfaf5;
-  --sidebar-foreground: #1a3300;
+  --sidebar-foreground: #2a2823;
   --sidebar-primary: #1a3300;
   --sidebar-primary-foreground: #fcfaf5;
-  --sidebar-accent: #d5f5c2;
-  --sidebar-accent-foreground: #1a3300;
-  --sidebar-border: #d9d6cc;
+  --sidebar-accent: #efe9dc;
+  --sidebar-accent-foreground: #2a2823;
+  --sidebar-border: #e2ddd1;
   --sidebar-ring: #1a3300;
 }
 
-/* Dark: the same sketchbook at night. Deep forest paper, cream ink; primary actions invert to a
-   cream fill with forest text. Yellow and the pastels keep their daytime values. */
+/* Dark: the same paper at night, a neutral warm charcoal rather than green. Actions switch to the
+   mint sticky-note color so they stay the one colored thing on the page. Yellow and the pastels
+   keep their daytime values. */
 .dark {
-  --background: #111a09;
-  --foreground: #f4f1e8;
-  --card: #18230f;
-  --card-foreground: #f4f1e8;
-  --popover: #1c2812;
-  --popover-foreground: #f4f1e8;
-  --primary: #f4f1e8;
+  --background: #1c1b18;
+  --foreground: #f1ede3;
+  --card: #24231f;
+  --card-foreground: #f1ede3;
+  --popover: #2a2925;
+  --popover-foreground: #f1ede3;
+  --primary: #d5f5c2;
   --primary-foreground: #1a3300;
-  --secondary: #223018;
-  --secondary-foreground: #f4f1e8;
-  --muted: #223018;
-  --muted-foreground: rgb(244 241 232 / 0.62);
-  --accent: #2c4020;
-  --accent-foreground: #d5f5c2;
+  --secondary: #2f2d28;
+  --secondary-foreground: #f1ede3;
+  --muted: #2f2d28;
+  --muted-foreground: #a9a397;
+  --accent: #34322c;
+  --accent-foreground: #f1ede3;
   --destructive: #e8845a;
-  --border: rgb(244 241 232 / 0.14);
-  --input: rgb(244 241 232 / 0.22);
+  --border: rgb(241 237 227 / 0.12);
+  --input: rgb(241 237 227 / 0.2);
   --ring: #d5f5c2;
   --highlight: #ffe95c;
   --highlight-foreground: #1a3300;
@@ -180,13 +183,13 @@
   --chart-3: #a8e5e5;
   --chart-4: #f6d0ff;
   --chart-5: #ffe95c;
-  --sidebar: #18230f;
-  --sidebar-foreground: #f4f1e8;
-  --sidebar-primary: #f4f1e8;
+  --sidebar: #24231f;
+  --sidebar-foreground: #f1ede3;
+  --sidebar-primary: #d5f5c2;
   --sidebar-primary-foreground: #1a3300;
-  --sidebar-accent: #2c4020;
-  --sidebar-accent-foreground: #d5f5c2;
-  --sidebar-border: rgb(244 241 232 / 0.14);
+  --sidebar-accent: #34322c;
+  --sidebar-accent-foreground: #f1ede3;
+  --sidebar-border: rgb(241 237 227 / 0.12);
   --sidebar-ring: #d5f5c2;
 }
 

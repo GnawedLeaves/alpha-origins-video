@@ -38,7 +38,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       <Navbar email={user.email} />
       <div className="mx-auto max-w-6xl px-4 pt-10">
         <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Project</p>
-        <h1 className="mt-2 font-display text-heading-sm font-extrabold break-words">
+        <h1 className="mt-2 font-display text-heading-sm font-extrabold text-primary break-words">
           {project.name}
         </h1>
       </div>
