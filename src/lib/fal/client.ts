@@ -1,5 +1,5 @@
 import "server-only";
-import { fal } from "@fal-ai/client";
+import { ApiError, ValidationError, fal } from "@fal-ai/client";
 import { requireEnv } from "@/lib/env";
 import type { AspectRatio } from "@/lib/types/domain";
 import { getFalModel, resolveFalEndpoint } from "./models";
@@ -114,4 +114,42 @@ export function parseWebhookPayload(body: {
     return { status: "FAILED", error: body.error ?? "Generation failed" };
   }
   return { status: "IN_PROGRESS" };
+}
+
+// fal.ai's raw errors are "ApiError"s with the useful part in `body.detail`. Turn them into one
+// sentence that says what to fix (shown to the user and saved on the generation row).
+export function describeFalError(err: unknown): string {
+  if (err instanceof ValidationError) {
+    const fields = err.fieldErrors
+      .map((e) => `${e.loc.filter((l) => l !== "body").join(".")}: ${e.msg}`)
+      .join("; ");
+    return `fal.ai didn't accept the request${fields ? ` (${fields})` : ""}.`;
+  }
+  if (err instanceof ApiError) {
+    const body = err.body as { detail?: unknown } | undefined;
+    const detail =
+      typeof body?.detail === "string"
+        ? body.detail
+        : Array.isArray(body?.detail)
+          ? body.detail.map((d: { msg?: string }) => d?.msg).filter(Boolean).join("; ")
+          : err.message;
+    const lower = detail.toLowerCase();
+    if (err.status === 401) {
+      return "fal.ai rejected FAL_KEY. Check the key in .env.local (format key_id:key_secret) and restart the app.";
+    }
+    if (err.status === 403 && (lower.includes("balance") || lower.includes("locked"))) {
+      return "Your fal.ai account is out of credit. Add credit at fal.ai/dashboard/billing, then try again.";
+    }
+    if (err.status === 403) {
+      return `fal.ai refused the request: ${detail}`;
+    }
+    if (err.status === 404) {
+      return "fal.ai couldn't find this video model. Pick another style under \"More settings\".";
+    }
+    if (err.status === 429) {
+      return "fal.ai is busy with too many requests. Please wait a minute and try again.";
+    }
+    return `fal.ai error (${err.status}): ${detail}`;
+  }
+  return err instanceof Error ? err.message : "Couldn't reach fal.ai. Please try again.";
 }

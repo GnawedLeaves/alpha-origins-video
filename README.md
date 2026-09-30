@@ -84,6 +84,16 @@ npm run check-setup
 - **Confirmation link opens a broken page**: in **Authentication → URL Configuration**, set Site URL
   to `http://localhost:3000` (and your production domain when you deploy).
 
+## Troubleshooting AI errors
+
+- **"Google's free AI is very busy right now"**: Gemini's free tier returns 503 "high demand" at
+  busy times. Keemu retries twice and then falls back to `gemini-flash-lite-latest`
+  (`GEMINI_FALLBACK_MODEL`); if both are busy, wait a minute and try again.
+- **A clip fails straight away**: open "What went wrong?" under the clip, or read the red message.
+  The real fal.ai reason is shown, e.g. a rejected `FAL_KEY` (it's `key_id:key_secret`), an account
+  with no credit (new fal.ai accounts need credit added at fal.ai/dashboard/billing), or a photo fal
+  couldn't use. The full error is also printed in the `npm run dev` terminal.
+
 ## How it fits together
 
 - **Improve my description** (`PromptComposer` → `/api/prompts/refine` → `src/lib/ai/refine-prompt.ts`):

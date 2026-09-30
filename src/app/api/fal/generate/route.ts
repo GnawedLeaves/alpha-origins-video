@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { submitGenerationJob } from "@/lib/fal/client";
+import { describeFalError, submitGenerationJob } from "@/lib/fal/client";
 import { getFalModel } from "@/lib/fal/models";
 import { signGenerationId } from "@/lib/fal/webhook-token";
 
@@ -67,13 +67,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertError?.message ?? "Insert failed" }, { status: 500 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  const webhookUrl =
-    siteUrl && !siteUrl.includes("localhost")
-      ? `${siteUrl}/api/fal/webhook?generationId=${generation.id}&token=${signGenerationId(generation.id)}`
-      : undefined;
-
   try {
+    // fal.ai can only call back a public URL; on a local machine the client polls instead.
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const webhookUrl =
+      siteUrl && !isLocalUrl(siteUrl)
+        ? `${siteUrl}/api/fal/webhook?generationId=${generation.id}&token=${signGenerationId(generation.id)}`
+        : undefined;
+
     const requestId = await submitGenerationJob({
       modelId,
       prompt,
@@ -90,10 +91,28 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ generationId: generation.id, falRequestId: requestId });
   } catch (err) {
+    console.error("fal.ai submit failed:", err);
+    const message = describeFalError(err);
     await supabase
       .from("generations")
-      .update({ status: "failed", error: (err as Error).message })
+      .update({ status: "failed", error: message })
       .eq("id", generation.id);
-    return NextResponse.json({ error: "Failed to submit job to fal.ai" }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}
+
+function isLocalUrl(url: string) {
+  try {
+    const { hostname } = new URL(url);
+    return (
+      hostname === "localhost" ||
+      hostname.endsWith(".local") ||
+      /^127\./.test(hostname) ||
+      /^10\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+    );
+  } catch {
+    return true;
   }
 }
