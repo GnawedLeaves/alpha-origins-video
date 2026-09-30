@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { ProjectCardLink } from "@/components/dashboard/ProjectCardLink";
 import { Navbar } from "@/components/layout/Navbar";
 import { NewProjectForm } from "@/components/dashboard/NewProjectForm";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
           <ul className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <li key={project.id}>
-                <Link href={`/projects/${project.id}`} className="block h-full rounded-xl">
+                <ProjectCardLink href={`/projects/${project.id}`}>
                   <Card className="h-full transition-colors hover:bg-accent hover:ring-foreground/30">
                     <CardHeader>
                       <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
                       Updated {new Date(project.updated_at).toLocaleDateString()}
                     </p>
                   </Card>
-                </Link>
+                </ProjectCardLink>
               </li>
             ))}
           </ul>

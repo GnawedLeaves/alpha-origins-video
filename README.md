@@ -94,6 +94,27 @@ npm run check-setup
   with no credit (new fal.ai accounts need credit added at fal.ai/dashboard/billing), or a photo fal
   couldn't use. The full error is also printed in the `npm run dev` terminal.
 
+## Usage & cost page
+
+Each project has a **Usage & cost** page (`/projects/[id]/usage`, button in the project header):
+totals (estimated fal.ai cost, videos made, seconds, final videos, captions), estimated cost per day
+for the last 30 days, a breakdown by video style, and the full generation history.
+
+Costs are **estimates**: finished videos × each style's price. Prices come from fal.ai's pricing API
+(`api.fal.ai/v1/models/pricing`, looked up with `FAL_KEY` and cached for an hour) when it answers,
+otherwise from the built-in list in `src/lib/fal/pricing.ts`. **Update that list** from fal.ai's
+model pages: the built-in numbers drift, and the Kling O1 models have no price set there, so they
+show as "no price set" unless fal's API supplies one. Failed videos count as $0. The exact bill is
+in the fal.ai dashboard.
+
+## Loading feedback
+
+Route changes show instant skeletons (`loading.tsx` in `dashboard/`, `projects/[id]/` and
+`projects/[id]/usage/`); project cards show "Opening…" and link buttons show a spinner while the
+next page loads. `Button` takes `loading` (spinner, disabled, `aria-busy`); buttons that navigate
+keep spinning until the new page is ready (`useTransition` around `router.push`). The main action
+of a screen uses `variant="cta"` (terracotta).
+
 ## When a video gets stuck
 
 - The page checks each unfinished video every few seconds, backing off when a check fails. After

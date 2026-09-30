@@ -27,9 +27,13 @@ export function ShareExportPanel({
     setTimeout(() => setCopiedId(null), 1500);
   }
 
+  // Which share button is busy (fetching the video for the share sheet): a caption id or "video".
+  const [sharing, setSharing] = useState<string | null>(null);
+
   async function nativeShare(caption?: CaptionRecord) {
-    if (!activeExport) return;
+    if (!activeExport || sharing) return;
     setShareStatus(null);
+    setSharing(caption?.id ?? "video");
     try {
       if (navigator.share) {
         const text = caption ? `${caption.content}\n\n${caption.hashtags.join(" ")}` : undefined;
@@ -49,6 +53,8 @@ export function ShareExportPanel({
       }
     } catch {
       // user cancelled the share sheet — not an error worth surfacing
+    } finally {
+      setSharing(null);
     }
   }
 
@@ -80,7 +86,12 @@ export function ShareExportPanel({
             >
               <Download /> Download video
             </Button>
-            <Button variant="outline" onClick={() => nativeShare()}>
+            <Button
+              variant="outline"
+              onClick={() => nativeShare()}
+              loading={sharing === "video"}
+              className="h-11 px-4 text-base"
+            >
               <Share2 size={14} /> Share
             </Button>
           </div>
@@ -100,7 +111,12 @@ export function ShareExportPanel({
                       {copiedId === caption.id ? <Check size={12} /> : <Copy size={12} />}
                       {copiedId === caption.id ? "Copied" : "Copy caption"}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => nativeShare(caption)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => nativeShare(caption)}
+                      loading={sharing === caption.id}
+                    >
                       <Share2 size={12} /> Share with caption
                     </Button>
                   </div>

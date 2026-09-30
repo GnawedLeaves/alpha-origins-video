@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowRight, Copy, Download, Loader2, Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowRight, Copy, Download, Pause, Play, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ClipTrimmer, type EditorClip } from "./ClipTrimmer";
 import { VideoPreviewPlayer } from "./VideoPreviewPlayer";
@@ -356,11 +356,12 @@ export function Timeline({
           )}
 
           <Button
+            variant="cta"
             onClick={handleExport}
-            disabled={rendering}
+            loading={rendering}
             className="mt-4 h-12 w-full text-lg"
           >
-            {rendering ? <Loader2 className="animate-spin" /> : <Download />}
+            <Download />
             {rendering
               ? stage || (ffmpegLoading ? "Loading video engine…" : `Rendering… ${Math.round(progress * 100)}%`)
               : "Make final video"}

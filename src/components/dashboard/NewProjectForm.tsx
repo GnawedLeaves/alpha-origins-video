@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ export function NewProjectForm() {
   const [name, setName] = useState("");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Keeps "Create" spinning until the new project's page has loaded.
+  const [navigating, startNavigation] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -40,7 +42,7 @@ export function NewProjectForm() {
       return;
     }
 
-    router.push(`/projects/${data.id}`);
+    startNavigation(() => router.push(`/projects/${data.id}`));
   }
 
   if (!open) {
@@ -57,8 +59,8 @@ export function NewProjectForm() {
         placeholder="e.g. Fall Launch Campaign"
         className="w-56"
       />
-      <Button type="submit" disabled={loading}>
-        Create
+      <Button type="submit" loading={loading || navigating}>
+        {navigating ? "Opening…" : "Create"}
       </Button>
       <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
         Cancel

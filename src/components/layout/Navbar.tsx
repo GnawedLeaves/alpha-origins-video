@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,16 @@ export function Navbar({ email }: { email?: string }) {
   const router = useRouter();
   const supabase = createClient();
 
+  const [signingOut, setSigningOut] = useState(false);
+  const [navigating, startNavigation] = useTransition();
+
   async function signOut() {
+    setSigningOut(true);
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    startNavigation(() => {
+      router.push("/login");
+      router.refresh();
+    });
   }
 
   return (
@@ -31,7 +38,8 @@ export function Navbar({ email }: { email?: string }) {
             </span>
           )}
           <ThemeToggle />
-          <Button variant="outline" size="sm" onClick={signOut}>
+          <Button variant="outline" size="sm" onClick={signOut}
+            loading={signingOut || navigating}>
             Sign out
           </Button>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, PawPrint } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -29,6 +29,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // True until the dashboard has actually loaded, so the button keeps spinning through the
+  // page change instead of flicking back to "Sign in".
+  const [navigating, startNavigation] = useTransition();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,8 +75,10 @@ export default function LoginPage() {
         }
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      startNavigation(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
     } catch (err) {
       setError(explainAuthError((err as Error).message));
     } finally {
@@ -154,9 +159,15 @@ export default function LoginPage() {
                 <p className="rounded-md bg-sticky-note-mint p-3 text-sm text-forest-ink">{notice}</p>
               )}
 
-              <Button type="submit" size="lg" disabled={loading} className="h-10 w-full">
-                {!loading && <ArrowRight />}
-                {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+              <Button type="submit" size="lg" loading={loading || navigating} className="h-10 w-full">
+                <ArrowRight />
+                {navigating
+                  ? "Opening your projects…"
+                  : loading
+                    ? "Please wait…"
+                    : mode === "login"
+                      ? "Sign in"
+                      : "Create account"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
                 Just an email and password. No credit card.

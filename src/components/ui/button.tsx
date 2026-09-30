@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 import { cn } from "cn"
 
 const buttonVariants = cva(
@@ -11,6 +12,10 @@ const buttonVariants = cva(
           "bg-primary text-primary-foreground shadow-subtle hover:bg-primary/85 hover:shadow-subtle-2",
         outline:
           "border-foreground/80 bg-transparent hover:bg-accent hover:text-accent-foreground aria-expanded:bg-accent aria-expanded:text-accent-foreground",
+        // The one main action of a screen ("Make video", "Make final video"): terracotta, so it
+        // stands apart from the forest-green buttons around it.
+        cta:
+          "bg-cta text-cta-foreground shadow-subtle hover:bg-cta/90 hover:shadow-subtle-2",
         // Sticky-note mint: playful secondary paths where a filled ink button feels too committed.
         pastel:
           "bg-sticky-note-mint text-forest-ink hover:bg-[color-mix(in_oklch,var(--color-sticky-note-mint),var(--color-forest-ink)_8%)]",
@@ -43,18 +48,32 @@ const buttonVariants = cva(
   }
 )
 
+// `loading`: shows a spinner in place of the button's icon, disables it and sets aria-busy, so a
+// click visibly "took" and can't be repeated while the work runs.
 function Button({
   className,
   variant = "default",
   size = "default",
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { loading?: boolean }) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      data-loading={loading || undefined}
+      aria-busy={loading || undefined}
+      disabled={disabled || loading}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        loading && "[&>svg:not([data-spinner])]:hidden"
+      )}
       {...props}
-    />
+    >
+      {loading && <Loader2 data-spinner="" className="animate-spin" aria-hidden="true" />}
+      {children}
+    </ButtonPrimitive>
   )
 }
 

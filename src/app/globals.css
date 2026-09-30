@@ -103,6 +103,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
   /* 6px buttons/inputs, 12px cards, 16px nav. */
@@ -139,6 +141,9 @@
   --border: #e2ddd1;
   --input: #c9c4b8;
   --ring: #1a3300;
+  /* Main-action buttons: terracotta, darkened for 4.5:1+ contrast with the cream text. */
+  --cta: #b3441a;
+  --cta-foreground: #fffaf3;
   --highlight: #ffe95c;
   --highlight-foreground: #1a3300;
   --chart-1: #1a3300;
@@ -178,6 +183,8 @@
   --border: rgb(241 237 227 / 0.12);
   --input: rgb(241 237 227 / 0.2);
   --ring: #d5f5c2;
+  --cta: #ee8a5c;
+  --cta-foreground: #1c1b18;
   --highlight: #ffe95c;
   --highlight-foreground: #1a3300;
   --chart-1: #d5f5c2;

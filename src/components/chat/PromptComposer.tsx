@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Images, Loader2, Undo2, Video, Wand2, X } from "lucide-react";
+import { Image as ImageIcon, Images, Undo2, Video, Wand2, X } from "lucide-react";
 import { FAL_MODELS, getFalModel, maxImagesFor } from "@/lib/fal/models";
 import type { AlbumPhoto } from "@/lib/album";
 import { PhotoAlbum } from "@/components/chat/PhotoAlbum";
@@ -260,9 +260,10 @@ export function PromptComposer({
                 variant="outline"
                 onClick={handleRefine}
                 disabled={busy}
+                loading={refining}
                 className="h-auto min-h-11 shrink-0 px-4 py-2.5 text-base sm:w-44 sm:whitespace-normal"
               >
-                {refining ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                <Wand2 />
                 {refining ? "Improving…" : "Improve my description"}
               </Button>
             )}
@@ -414,8 +415,14 @@ export function PromptComposer({
         </details>
 
         <div className="flex flex-wrap items-center gap-4 border-t border-border pt-5">
-          <Button onClick={handleGenerate} disabled={!canGenerate} className="h-12 px-6 text-lg">
-            {submitting ? <Loader2 className="animate-spin" /> : <Video />}
+          <Button
+            variant="cta"
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            loading={submitting}
+            className="h-12 px-6 text-lg"
+          >
+            <Video />
             {submitting ? "Starting…" : "Make video"}
           </Button>
           <p className="text-muted-foreground">
