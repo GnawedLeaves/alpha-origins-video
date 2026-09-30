@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, PawPrint } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/brand/Logo";
-import { SketchDoodle } from "@/components/brand/SketchDoodle";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   Card,
@@ -29,6 +28,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // True until the dashboard has actually loaded, so the button keeps spinning through the
+  // page change instead of flicking back to "Sign in".
+  const [navigating, startNavigation] = useTransition();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,8 +74,10 @@ export default function LoginPage() {
         }
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      startNavigation(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
     } catch (err) {
       setError(explainAuthError((err as Error).message));
     } finally {
@@ -82,31 +86,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6">
+    <div className="flex min-h-screen flex-col">
+      <header className="flex w-full items-center justify-between px-4 pt-4 sm:px-6">
         <Logo />
         <ThemeToggle />
       </header>
 
-      <main className="relative mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-4 py-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
-        <SketchDoodle className="absolute -top-16 right-0 hidden w-96 lg:block" />
-
-        <section className="relative">
-          <Badge variant="highlight" className="h-6 px-2.5 text-xs">
+      <main className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center px-4 py-12">
+        <section className="text-center">
+          <Badge variant="selected" className="h-6 px-2.5 text-xs">
             <PawPrint /> Dog video ads for Alpha Origins
           </Badge>
-          <h1 className="mt-6 font-display text-heading-sm font-extrabold text-primary sm:text-heading lg:text-heading-lg">
-            Make a dog <span className="highlight-marker">video ad</span> in minutes.
-          </h1>
-          <p className="mt-6 max-w-xl text-body text-foreground/85">
-            Describe what you&apos;d like to see. Keemu makes the video, then writes the captions
-            for Instagram, Facebook, TikTok and YouTube.
+          <h1 className="mt-4 text-3xl font-medium tracking-tight">Make a dog video ad in minutes</h1>
+          <p className="mt-3 text-muted-foreground">
+            Describe what you&apos;d like to see. Keemu makes the video, then writes the captions for
+            Instagram, Facebook, TikTok and YouTube.
           </p>
         </section>
 
-        <Card className="relative w-full max-w-md justify-self-center lg:justify-self-end">
+        <Card className="mt-8 w-full">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">
+            <CardTitle className="text-lg font-medium">
               {mode === "login" ? "Welcome back" : "Create your studio"}
             </CardTitle>
             <CardDescription>
@@ -151,12 +151,18 @@ export default function LoginPage() {
 
               {error && <p className="text-sm text-destructive">{error}</p>}
               {notice && (
-                <p className="rounded-md bg-sticky-note-mint p-3 text-sm text-forest-ink">{notice}</p>
+                <p className="rounded-xl border border-border bg-muted p-3 text-sm text-foreground">{notice}</p>
               )}
 
-              <Button type="submit" size="lg" disabled={loading} className="h-10 w-full">
-                {!loading && <ArrowRight />}
-                {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+              <Button type="submit" size="lg" loading={loading || navigating} className="h-10 w-full">
+                <ArrowRight />
+                {navigating
+                  ? "Opening your projects…"
+                  : loading
+                    ? "Please wait…"
+                    : mode === "login"
+                      ? "Sign in"
+                      : "Create account"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
                 Just an email and password. No credit card.

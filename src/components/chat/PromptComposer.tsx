@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Images, Loader2, Undo2, Video, Wand2, X } from "lucide-react";
+import { Image as ImageIcon, Images, Undo2, Video, Wand2, X } from "lucide-react";
 import { FAL_MODELS, getFalModel, maxImagesFor } from "@/lib/fal/models";
 import type { AlbumPhoto } from "@/lib/album";
 import { PhotoAlbum } from "@/components/chat/PhotoAlbum";
@@ -231,7 +231,7 @@ export function PromptComposer({
     <Card>
       <CardContent className="space-y-5">
         <div>
-          <Label htmlFor="video-idea" className="text-lg font-semibold">
+          <Label htmlFor="video-idea" className="text-lg font-medium">
             What should the video show?
           </Label>
           <p className="mt-1 text-muted-foreground">
@@ -260,9 +260,10 @@ export function PromptComposer({
                 variant="outline"
                 onClick={handleRefine}
                 disabled={busy}
+                loading={refining}
                 className="h-auto min-h-11 shrink-0 px-4 py-2.5 text-base sm:w-44 sm:whitespace-normal"
               >
-                {refining ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                <Wand2 />
                 {refining ? "Improving…" : "Improve my description"}
               </Button>
             )}
@@ -303,7 +304,7 @@ export function PromptComposer({
                       className="h-20 w-20 rounded-lg object-cover ring-1 ring-border"
                     />
                     {referenceImages.length > 1 && (
-                      <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 text-sm font-semibold text-white">
+                      <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 text-sm font-medium text-white">
                         {i + 1}
                       </span>
                     )}
@@ -313,7 +314,7 @@ export function PromptComposer({
                       disabled={busy}
                       aria-label={`Remove photo ${i + 1}`}
                       title="Remove this photo"
-                      className="absolute -top-2 -right-2 flex size-7 items-center justify-center rounded-full bg-background text-foreground shadow-subtle-2 ring-1 ring-border hover:bg-accent disabled:opacity-50"
+                      className="absolute -top-2 -right-2 flex size-7 items-center justify-center rounded-full bg-background text-foreground shadow-subtle ring-1 ring-border hover:bg-accent disabled:opacity-50"
                     >
                       <X className="size-4" />
                     </button>
@@ -414,8 +415,14 @@ export function PromptComposer({
         </details>
 
         <div className="flex flex-wrap items-center gap-4 border-t border-border pt-5">
-          <Button onClick={handleGenerate} disabled={!canGenerate} className="h-12 px-6 text-lg">
-            {submitting ? <Loader2 className="animate-spin" /> : <Video />}
+          <Button
+            variant="cta"
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            loading={submitting}
+            className="h-12 px-6 text-lg"
+          >
+            <Video />
             {submitting ? "Starting…" : "Make video"}
           </Button>
           <p className="text-muted-foreground">
@@ -425,7 +432,7 @@ export function PromptComposer({
           </p>
         </div>
 
-        {error && <p className="text-body-sm text-destructive">{error}</p>}
+        {error && <p className="text-base text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );
@@ -460,9 +467,9 @@ function ChoiceGroup({
               disabled={disabled}
               onClick={() => onChange(o.value)}
               className={cn(
-                "rounded-md border px-4 py-2 text-left transition-colors disabled:opacity-50",
+                "rounded-xl border px-4 py-2 text-left transition-colors disabled:opacity-50",
                 selected
-                  ? "border-primary bg-primary text-primary-foreground"
+                  ? "border-selected bg-selected text-selected-foreground"
                   : "border-input hover:bg-accent"
               )}
             >

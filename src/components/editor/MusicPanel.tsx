@@ -30,11 +30,11 @@ export function MusicPanel({
       <CardContent className="space-y-5">
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sticky-note-teal text-forest-ink">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-foreground">
               <Music className="size-5" />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-semibold">{music.name}</p>
+              <p className="truncate font-medium">{music.name}</p>
               <p className="text-sm text-muted-foreground">
                 Song is {music.duration.toFixed(0)}s long · plays for {heard.toFixed(1)}s in your video
               </p>

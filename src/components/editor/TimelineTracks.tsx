@@ -138,7 +138,7 @@ export function TimelineTracks({
               {ticks.map((t) => (
                 <div key={t} className="absolute top-0 h-full" style={{ left: t * pxPerSec }}>
                   <div className="h-2 w-px bg-foreground/30" />
-                  <span className="absolute top-2 left-1 font-mono text-xs text-muted-foreground">
+                  <span className="absolute top-2 left-1 text-xs text-muted-foreground">
                     {t}s
                   </span>
                 </div>
@@ -192,8 +192,8 @@ export function TimelineTracks({
                     onPointerCancel={() => setClipDrag(null)}
                     className={cn(
                       "absolute top-2 bottom-2 cursor-grab touch-none overflow-hidden rounded-lg bg-black select-none active:cursor-grabbing",
-                      selected ? "ring-4 ring-primary" : "ring-1 ring-foreground/20",
-                      dragging && "z-20 opacity-90 shadow-subtle-2"
+                      selected ? "ring-4 ring-selected" : "ring-1 ring-input",
+                      dragging && "z-20 opacity-90 shadow-subtle"
                     )}
                     style={{
                       left: starts[i] * pxPerSec + 2,
@@ -208,10 +208,10 @@ export function TimelineTracks({
                       playsInline
                       className="pointer-events-none h-full w-full object-cover opacity-80"
                     />
-                    <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 text-sm font-semibold text-white">
+                    <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 text-sm font-medium text-white">
                       {i + 1}
                     </span>
-                    <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 font-mono text-xs text-white">
+                    <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 text-xs text-white">
                       {len.toFixed(1)}s
                     </span>
                   </div>
@@ -219,7 +219,7 @@ export function TimelineTracks({
               })}
               {dropX !== null && (
                 <div
-                  className="pointer-events-none absolute top-1 bottom-1 z-30 w-1 -translate-x-1/2 rounded bg-highlighter-yellow ring-1 ring-forest-ink"
+                  className="pointer-events-none absolute top-1 bottom-1 z-30 w-1 -translate-x-1/2 rounded bg-selected"
                   style={{ left: dropX }}
                 />
               )}
@@ -263,8 +263,8 @@ export function TimelineTracks({
                   }}
                   onPointerCancel={() => setMusicDrag(null)}
                   className={cn(
-                    "absolute top-2 bottom-2 flex cursor-grab touch-none items-center gap-1.5 overflow-hidden rounded-lg bg-sticky-note-teal px-2 text-sm font-medium text-forest-ink select-none active:cursor-grabbing",
-                    selection?.kind === "music" ? "ring-4 ring-primary" : "ring-1 ring-forest-ink/30"
+                    "absolute top-2 bottom-2 flex cursor-grab touch-none items-center gap-1.5 overflow-hidden rounded-lg border border-input bg-secondary px-2 text-sm font-medium text-foreground select-none active:cursor-grabbing",
+                    selection?.kind === "music" ? "ring-4 ring-selected" : ""
                   )}
                   style={{ left: music.offset * pxPerSec + 2, width: Math.max(40, musicBlockLen * pxPerSec - 4) }}
                 >

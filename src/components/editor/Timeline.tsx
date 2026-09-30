@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowRight, Copy, Download, Loader2, Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowRight, Copy, Download, Pause, Play, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ClipTrimmer, type EditorClip } from "./ClipTrimmer";
 import { VideoPreviewPlayer } from "./VideoPreviewPlayer";
@@ -237,8 +237,8 @@ export function Timeline({
 
   if (clips.length === 0) {
     return (
-      <div className="max-w-xl rounded-xl bg-sticky-note-blush p-6 text-forest-ink">
-        <p className="font-semibold">Nothing to put together yet</p>
+      <div className="max-w-xl rounded-2xl border border-border bg-card p-6">
+        <p className="font-medium">Nothing to put together yet</p>
         <p className="mt-1">
           In step 1, press &ldquo;Use this clip&rdquo; on a finished video. Your clips will appear
           here on a timeline, where you can arrange them and add music.
@@ -262,7 +262,7 @@ export function Timeline({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* Preview */}
         <div>
-          <h3 className="text-base font-semibold text-foreground">Preview</h3>
+          <h3 className="text-base font-medium text-foreground">Preview</h3>
           <div
             className={cn(
               "mx-auto mt-3 max-w-full overflow-hidden rounded-xl bg-black",
@@ -297,7 +297,7 @@ export function Timeline({
                 <RotateCcw /> To the start
               </Button>
             )}
-            <span className="ml-auto font-mono text-sm text-muted-foreground tabular-nums">
+            <span className="ml-auto text-sm text-muted-foreground tabular-nums">
               {playTime.toFixed(1)}s / {playTotal.toFixed(1)}s
             </span>
           </div>
@@ -305,7 +305,7 @@ export function Timeline({
 
         {/* Export */}
         <div>
-          <h3 className="text-base font-semibold text-foreground">Final video</h3>
+          <h3 className="text-base font-medium text-foreground">Final video</h3>
           <div className="mt-3 flex flex-wrap items-start gap-4">
             <div className="space-y-1.5">
               <Label>Shape</Label>
@@ -356,11 +356,12 @@ export function Timeline({
           )}
 
           <Button
+            variant="cta"
             onClick={handleExport}
-            disabled={rendering}
+            loading={rendering}
             className="mt-4 h-12 w-full text-lg"
           >
-            {rendering ? <Loader2 className="animate-spin" /> : <Download />}
+            <Download />
             {rendering
               ? stage || (ffmpegLoading ? "Loading video engine…" : `Rendering… ${Math.round(progress * 100)}%`)
               : "Make final video"}
@@ -373,7 +374,7 @@ export function Timeline({
 
           {finishedUrl && (
             <div className="mt-6 border-t border-border pt-5">
-              <h3 className="text-base font-semibold text-foreground">Your finished video</h3>
+              <h3 className="text-base font-medium text-foreground">Your finished video</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Saved. Changed something? Press &ldquo;Make final video&rdquo; again.
               </p>
@@ -400,7 +401,7 @@ export function Timeline({
       {/* Timeline */}
       <div>
         <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
-          <h3 className="text-base font-semibold text-foreground">Timeline</h3>
+          <h3 className="text-base font-medium text-foreground">Timeline</h3>
           <p className="text-sm text-muted-foreground">
             Drag clips to change the order. Tap a clip or the music to change it.
           </p>
@@ -431,7 +432,7 @@ export function Timeline({
       ) : selectedIndex !== -1 ? (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="mr-auto font-semibold">Editing clip {selectedIndex + 1}</p>
+            <p className="mr-auto font-medium">Editing clip {selectedIndex + 1}</p>
             <Button
               variant="outline"
               onClick={() => duplicateClip(clips[selectedIndex].id)}

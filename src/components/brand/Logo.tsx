@@ -1,35 +1,31 @@
 import { cn } from "@/lib/utils";
 
-// Yellow square with a hand-drawn "k" monogram, followed by the wordmark. The strokes are
-// deliberately a little uneven, like a marker sketch.
+// Monochrome mark: a warm-ink rounded square with a light "k". Flips with the theme
+// (ink on light, light on dark) so it's always the strongest mark on the page.
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 40 40"
-      aria-hidden="true"
-      className={cn("size-9 shrink-0 rounded-md", className)}
-    >
-      <rect width="40" height="40" rx="6" className="fill-highlighter-yellow" />
+    <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-7 shrink-0", className)}>
+      <rect width="32" height="32" rx="8" className="fill-primary" />
       <g
         fill="none"
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="stroke-forest-ink"
+        className="stroke-primary-foreground"
       >
-        <path d="M14.2 9.6c.3 6.9-.2 13.9.4 20.8" />
-        <path d="M25.6 16.4c-3.5 2.2-7.2 4.3-10.6 6.8" />
-        <path d="M17.9 21.3c2.6 2.6 5.3 5.5 8.3 8.4" />
+        <path d="M11.5 8.5v15" />
+        <path d="M21 13l-7.5 5.2" />
+        <path d="M15.2 17l6 6.5" />
       </g>
     </svg>
   );
 }
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
+    <span className={cn("inline-flex items-center gap-2", className)}>
       <LogoMark />
-      <span className="text-lg font-bold tracking-tight text-foreground">Keemu</span>
+      {!compact && <span className="text-lg font-medium text-foreground">Keemu</span>}
     </span>
   );
 }

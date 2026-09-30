@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
 import { ProjectWorkspace } from "@/components/workspace/ProjectWorkspace";
+import { LinkButton } from "@/components/layout/LinkButton";
+import { BarChart3 } from "lucide-react";
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,13 +35,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     .single();
 
   return (
-    <div className="min-h-screen">
-      <Navbar email={user.email} />
-      <div className="mx-auto max-w-6xl px-4 pt-10">
-        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Project</p>
-        <h1 className="mt-2 font-display text-heading-sm font-extrabold text-primary break-words">
-          {project.name}
-        </h1>
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="min-w-0 text-3xl font-medium tracking-tight break-words">{project.name}</h1>
+        <LinkButton href={`/projects/${project.id}/usage`} icon={<BarChart3 />} className="h-10 px-3 text-base">
+          Usage &amp; cost
+        </LinkButton>
       </div>
       <ProjectWorkspace
         project={project}
@@ -57,6 +57,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           }
         }
       />
-    </div>
+    </>
   );
 }
